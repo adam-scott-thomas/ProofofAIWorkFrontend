@@ -1,95 +1,11 @@
-import { Plus, FolderKanban, MessageSquare, Calendar, CheckCircle2, Clock, AlertCircle, Sparkles, MoreVertical, ChevronRight } from "lucide-react";
+import { Plus, FolderKanban, Sparkles, ChevronRight, MoreVertical } from "lucide-react";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Link } from "react-router";
 import { useState } from "react";
 import { CreateProjectDialog } from "../components/CreateProjectDialog";
-import { EmptyState } from "../components/EmptyState";
-
-const mockProjects = [
-  {
-    id: "proj_1",
-    name: "Mobile App Redesign",
-    description: "Complete redesign of mobile experience with focus on accessibility and performance",
-    status: "confirmed",
-    conversationCount: 23,
-    hasAssessment: true,
-    createdAt: "2026-02-15T10:00:00Z",
-    lastActivity: "2026-03-26T16:42:00Z",
-  },
-  {
-    id: "proj_2",
-    name: "Backend Architecture Migration",
-    description: "Migrate monolith to microservices architecture with event-driven patterns",
-    status: "confirmed",
-    conversationCount: 18,
-    hasAssessment: true,
-    createdAt: "2026-01-20T14:30:00Z",
-    lastActivity: "2026-03-24T14:05:00Z",
-  },
-  {
-    id: "proj_3",
-    name: "Data Pipeline Optimization",
-    description: "Optimize ETL pipelines for real-time processing and cost reduction",
-    status: "suggested",
-    conversationCount: 12,
-    hasAssessment: false,
-    createdAt: "2026-03-23T10:18:00Z",
-    lastActivity: "2026-03-23T10:18:00Z",
-  },
-  {
-    id: "proj_4",
-    name: "Design System Implementation",
-    description: "Build and document comprehensive design system for product consistency",
-    status: "confirmed",
-    conversationCount: 15,
-    hasAssessment: false,
-    createdAt: "2026-02-01T09:00:00Z",
-    lastActivity: "2026-03-20T11:30:00Z",
-  },
-  {
-    id: "proj_5",
-    name: "Customer Analytics Dashboard",
-    description: "Internal analytics dashboard for customer success team",
-    status: "suggested",
-    conversationCount: 8,
-    hasAssessment: false,
-    createdAt: "2026-03-18T15:45:00Z",
-    lastActivity: "2026-03-18T15:45:00Z",
-  },
-  {
-    id: "proj_6",
-    name: "API Documentation Overhaul",
-    description: "Rewrite developer documentation with interactive examples",
-    status: "confirmed",
-    conversationCount: 11,
-    hasAssessment: false,
-    createdAt: "2026-01-10T13:20:00Z",
-    lastActivity: "2026-03-15T09:00:00Z",
-  },
-  {
-    id: "proj_7",
-    name: "Security Audit & Remediation",
-    description: "Comprehensive security review and vulnerability remediation",
-    status: "confirmed",
-    conversationCount: 19,
-    hasAssessment: true,
-    createdAt: "2026-02-28T11:00:00Z",
-    lastActivity: "2026-03-22T16:30:00Z",
-  },
-  {
-    id: "proj_8",
-    name: "Machine Learning Model Training",
-    description: "Train and deploy recommendation engine for personalized content",
-    status: "suggested",
-    conversationCount: 14,
-    hasAssessment: false,
-    createdAt: "2026-03-12T14:15:00Z",
-    lastActivity: "2026-03-12T14:15:00Z",
-  },
-];
+import { useProjects } from "../../hooks/useApi";
 
 function ProjectStatusBadge({ status }: { status: string }) {
   if (status === "confirmed") {
@@ -109,8 +25,11 @@ function ProjectStatusBadge({ status }: { status: string }) {
 
 export default function Projects() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const confirmedProjects = mockProjects.filter(p => p.status === "confirmed");
-  const suggestedProjects = mockProjects.filter(p => p.status === "suggested");
+  const { data, isLoading, isError } = useProjects();
+
+  const allProjects: any[] = Array.isArray(data) ? data : (data?.items ?? []);
+  const confirmedProjects = allProjects.filter(p => p.status === "confirmed");
+  const suggestedProjects = allProjects.filter(p => p.status === "suggested");
 
   return (
     <div className="min-h-screen">
@@ -133,8 +52,34 @@ export default function Projects() {
       </header>
 
       <div className="p-8">
+        {/* Loading */}
+        {isLoading && (
+          <div className="py-12 text-center text-[13px] text-[#717182]">
+            Loading projects...
+          </div>
+        )}
+
+        {/* Error */}
+        {isError && (
+          <Card className="border border-red-200 bg-red-50 p-6 shadow-sm">
+            <p className="text-[13px] text-red-800">Failed to load projects. Check your connection and try again.</p>
+          </Card>
+        )}
+
+        {/* Empty state */}
+        {!isLoading && !isError && allProjects.length === 0 && (
+          <Card className="border border-[rgba(0,0,0,0.08)] bg-white p-8 shadow-sm text-center">
+            <FolderKanban className="mx-auto mb-3 h-8 w-8 text-[#717182]" />
+            <p className="text-[14px]">No projects yet</p>
+            <p className="mt-1 mb-4 text-[13px] text-[#717182]">
+              Upload conversations and cluster them into projects to get started.
+            </p>
+            <Button onClick={() => setCreateDialogOpen(true)}>Create Project</Button>
+          </Card>
+        )}
+
         {/* Suggested Projects Section */}
-        {suggestedProjects.length > 0 && (
+        {!isLoading && !isError && suggestedProjects.length > 0 && (
           <div className="mb-8">
             <Card className="border border-purple-200 bg-purple-50 shadow-sm">
               <div className="border-b border-purple-200 bg-purple-100/50 px-6 py-4">
@@ -149,7 +94,7 @@ export default function Projects() {
                 </div>
               </div>
               <div className="divide-y divide-purple-200">
-                {suggestedProjects.map((project) => (
+                {suggestedProjects.map((project: any) => (
                   <div
                     key={project.id}
                     className="px-6 py-4 hover:bg-purple-100/30 transition-colors"
@@ -162,12 +107,16 @@ export default function Projects() {
                           </Link>
                           <ProjectStatusBadge status={project.status} />
                         </div>
-                        <p className="mb-2 text-[13px] text-[#717182]">{project.description}</p>
+                        {project.description && (
+                          <p className="mb-2 text-[13px] text-[#717182]">{project.description}</p>
+                        )}
                         <div className="flex items-center gap-4 text-[13px] text-[#717182]">
-                          <span>{project.conversationCount} conversations</span>
+                          {project.conversation_count != null && (
+                            <span>{project.conversation_count} conversations</span>
+                          )}
                           <span className="font-mono">
                             Created{" "}
-                            {new Date(project.createdAt).toLocaleDateString('en-US', {
+                            {new Date(project.created_at ?? project.createdAt).toLocaleDateString('en-US', {
                               month: 'short',
                               day: 'numeric',
                             })}
@@ -191,53 +140,61 @@ export default function Projects() {
         )}
 
         {/* Confirmed Projects */}
-        <Card className="border border-[rgba(0,0,0,0.08)] bg-white shadow-sm">
-          <div className="border-b border-[rgba(0,0,0,0.06)] px-6 py-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-[15px]">Confirmed Projects</h3>
-              <span className="text-[13px] text-[#717182]">{confirmedProjects.length} total</span>
+        {!isLoading && !isError && confirmedProjects.length > 0 && (
+          <Card className="border border-[rgba(0,0,0,0.08)] bg-white shadow-sm">
+            <div className="border-b border-[rgba(0,0,0,0.06)] px-6 py-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[15px]">Confirmed Projects</h3>
+                <span className="text-[13px] text-[#717182]">{confirmedProjects.length} total</span>
+              </div>
             </div>
-          </div>
-          <div className="divide-y divide-[rgba(0,0,0,0.04)]">
-            {confirmedProjects.map((project) => (
-              <Link
-                key={project.id}
-                to={`/projects/${project.id}`}
-                className="block px-6 py-5 hover:bg-[#FAFAFA] transition-colors"
-              >
-                <div className="flex items-start justify-between gap-6">
-                  <div className="flex-1">
-                    <div className="mb-1 flex items-center gap-3">
-                      <FolderKanban className="h-4 w-4 text-[#717182]" />
-                      <div className="text-[14px]">{project.name}</div>
-                      {project.hasAssessment && (
-                        <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
-                          Assessed
-                        </Badge>
+            <div className="divide-y divide-[rgba(0,0,0,0.04)]">
+              {confirmedProjects.map((project: any) => (
+                <Link
+                  key={project.id}
+                  to={`/projects/${project.id}`}
+                  className="block px-6 py-5 hover:bg-[#FAFAFA] transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-6">
+                    <div className="flex-1">
+                      <div className="mb-1 flex items-center gap-3">
+                        <FolderKanban className="h-4 w-4 text-[#717182]" />
+                        <div className="text-[14px]">{project.name}</div>
+                        {project.has_assessment && (
+                          <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
+                            Assessed
+                          </Badge>
+                        )}
+                      </div>
+                      {project.description && (
+                        <p className="mb-2 ml-7 text-[13px] text-[#717182]">{project.description}</p>
                       )}
+                      <div className="ml-7 flex items-center gap-4 text-[13px] text-[#717182]">
+                        {project.conversation_count != null && (
+                          <span>{project.conversation_count} conversations</span>
+                        )}
+                        {(project.last_activity ?? project.lastActivity) && (
+                          <span className="font-mono">
+                            Last activity{" "}
+                            {new Date(project.last_activity ?? project.lastActivity).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <p className="mb-2 ml-7 text-[13px] text-[#717182]">{project.description}</p>
-                    <div className="ml-7 flex items-center gap-4 text-[13px] text-[#717182]">
-                      <span>{project.conversationCount} conversations</span>
-                      <span className="font-mono">
-                        Last activity{" "}
-                        {new Date(project.lastActivity).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <ChevronRight className="h-4 w-4 text-[#717182]" />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <ChevronRight className="h-4 w-4 text-[#717182]" />
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </Card>
+                </Link>
+              ))}
+            </div>
+          </Card>
+        )}
       </div>
-      
+
       <CreateProjectDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
     </div>
   );

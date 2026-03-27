@@ -6,8 +6,16 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Separator } from "../components/ui/separator";
 import { Switch } from "../components/ui/switch";
+import { useCurrentUser } from "../../hooks/useApi";
 
 export default function Account() {
+  const { data: user, isLoading } = useCurrentUser();
+
+  const name = user?.name ?? "";
+  const handle = user?.handle ?? "";
+  const email = user?.email ?? "";
+  const bio = user?.bio ?? "";
+
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -28,33 +36,33 @@ export default function Account() {
               <User className="h-5 w-5 text-[#717182]" />
               <h2 className="text-[15px]">Profile</h2>
             </div>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" defaultValue="Alex Chen" className="mt-1.5" />
+            {isLoading ? (
+              <div className="text-[13px] text-[#717182]">Loading profile...</div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input id="name" defaultValue={name} className="mt-1.5" />
+                  </div>
+                  <div>
+                    <Label htmlFor="handle">Handle</Label>
+                    <Input id="handle" defaultValue={handle} className="mt-1.5" />
+                  </div>
                 </div>
                 <div>
-                  <Label htmlFor="handle">Handle</Label>
-                  <Input id="handle" defaultValue="@alexchen" className="mt-1.5" />
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" defaultValue={email} className="mt-1.5" />
+                </div>
+                <div>
+                  <Label htmlFor="bio">Bio</Label>
+                  <Input id="bio" defaultValue={bio} className="mt-1.5" />
+                </div>
+                <div className="flex justify-end">
+                  <Button>Save Changes</Button>
                 </div>
               </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue="alex@example.com" className="mt-1.5" />
-              </div>
-              <div>
-                <Label htmlFor="bio">Bio</Label>
-                <Input 
-                  id="bio" 
-                  defaultValue="Software architect specializing in distributed systems" 
-                  className="mt-1.5" 
-                />
-              </div>
-              <div className="flex justify-end">
-                <Button>Save Changes</Button>
-              </div>
-            </div>
+            )}
           </Card>
 
           {/* Integrations */}
@@ -110,15 +118,26 @@ export default function Account() {
               <Button variant="outline" size="sm">Generate New Key</Button>
             </div>
             <div className="space-y-3">
-              <div className="flex items-center justify-between rounded-md border border-[rgba(0,0,0,0.08)] bg-[#FAFAFA] p-4">
-                <div>
-                  <div className="mb-1 font-mono text-[13px]">poaw_live_••••••••••••3x7k</div>
-                  <div className="text-[12px] text-[#717182]">Created Mar 15, 2026 • Last used 2 hours ago</div>
+              {user?.api_keys?.length > 0 ? (
+                user.api_keys.map((key: any) => (
+                  <div key={key.id} className="flex items-center justify-between rounded-md border border-[rgba(0,0,0,0.08)] bg-[#FAFAFA] p-4">
+                    <div>
+                      <div className="mb-1 font-mono text-[13px]">{key.masked ?? `poaw_live_••••••••••••${key.suffix}`}</div>
+                      <div className="text-[12px] text-[#717182]">
+                        Created {new Date(key.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {key.last_used && ` • Last used ${key.last_used}`}
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm">
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center justify-between rounded-md border border-[rgba(0,0,0,0.08)] bg-[#FAFAFA] p-4">
+                  <div className="text-[13px] text-[#717182]">No API keys generated yet.</div>
                 </div>
-                <Button variant="ghost" size="sm">
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
+              )}
             </div>
           </Card>
 

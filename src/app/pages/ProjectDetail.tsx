@@ -1,11 +1,10 @@
-import { 
-  ArrowLeft, 
-  FolderKanban, 
-  MessageSquare, 
-  GitBranch, 
-  Shield, 
-  Eye, 
-  EyeOff,
+import {
+  ArrowLeft,
+  FolderKanban,
+  MessageSquare,
+  GitBranch,
+  Shield,
+  Eye,
   Settings,
   Play,
   Trash2,
@@ -16,74 +15,49 @@ import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Link, useParams } from "react-router";
-
-const mockProjectDetail = {
-  id: "proj_1",
-  name: "Mobile App Redesign",
-  description: "Complete redesign of mobile experience with focus on accessibility and performance",
-  status: "confirmed",
-  conversationCount: 23,
-  hasAssessment: true,
-  createdAt: "2026-02-15T10:00:00Z",
-  lastActivity: "2026-03-26T16:42:00Z",
-  conversations: [
-    {
-      id: "conv_1",
-      title: "Mobile navigation redesign with accessibility focus",
-      turnCount: 42,
-      model: "Claude 3.5 Sonnet",
-      createdAt: "2026-03-26T09:30:00Z",
-      tags: ["ui-design", "accessibility", "react"],
-    },
-    {
-      id: "conv_5",
-      title: "Touch target sizing and responsive breakpoints",
-      turnCount: 28,
-      model: "ChatGPT-4",
-      createdAt: "2026-03-24T14:15:00Z",
-      tags: ["ui-design", "responsive"],
-    },
-    {
-      id: "conv_9",
-      title: "Animation performance on low-end devices",
-      turnCount: 31,
-      model: "Claude 3.5 Sonnet",
-      createdAt: "2026-03-22T10:00:00Z",
-      tags: ["performance", "animation"],
-    },
-  ],
-  repos: [
-    {
-      id: "repo_1",
-      url: "https://github.com/acme/mobile-app",
-      branch: "feature/redesign",
-      commits: 47,
-      addedAt: "2026-02-20T11:00:00Z",
-    },
-  ],
-  masks: [
-    {
-      id: "mask_1",
-      pattern: "api_key_*",
-      type: "redaction",
-      createdAt: "2026-02-15T10:30:00Z",
-    },
-    {
-      id: "mask_2",
-      pattern: "user_email",
-      type: "redaction",
-      createdAt: "2026-02-15T10:30:00Z",
-    },
-  ],
-  workProfile: {
-    cai: 421,
-    hls: 85,
-    ai_execution_load: 0.64,
-  },
-};
+import { useProject } from "../../hooks/useApi";
 
 export default function ProjectDetail() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
+  const { data: project, isLoading, isError } = useProject(id ?? "");
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-[13px] text-[#717182]">
+        Loading project...
+      </div>
+    );
+  }
+
+  if (isError || !project) {
+    return (
+      <div className="min-h-screen">
+        <header className="border-b border-[rgba(0,0,0,0.08)] bg-white">
+          <div className="px-8 py-6">
+            <Link to="/projects">
+              <Button variant="ghost" size="sm" className="-ml-3">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Projects
+              </Button>
+            </Link>
+          </div>
+        </header>
+        <div className="p-8">
+          <Card className="border border-red-200 bg-red-50 p-6 shadow-sm">
+            <p className="text-[13px] text-red-800">Project not found or failed to load.</p>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  const conversations: any[] = Array.isArray(project.conversations) ? project.conversations : [];
+  const repos: any[] = Array.isArray(project.repos) ? project.repos : [];
+  const masks: any[] = Array.isArray(project.masks) ? project.masks : [];
+  const workProfile = project.work_profile ?? project.workProfile;
+  const hasAssessment = project.has_assessment ?? project.hasAssessment ?? !!workProfile;
+  const createdAt = project.created_at ?? project.createdAt;
+  const lastActivity = project.last_activity ?? project.lastActivity;
 
   return (
     <div className="min-h-screen">
@@ -102,29 +76,37 @@ export default function ProjectDetail() {
             <div className="flex-1">
               <div className="mb-2 flex items-center gap-3">
                 <FolderKanban className="h-5 w-5 text-[#717182]" />
-                <h1 className="text-xl tracking-tight">{mockProjectDetail.name}</h1>
-                {mockProjectDetail.hasAssessment && (
+                <h1 className="text-xl tracking-tight">{project.name}</h1>
+                {hasAssessment && (
                   <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
                     Assessed
                   </Badge>
                 )}
               </div>
-              <p className="mb-3 text-[14px] text-[#717182]">{mockProjectDetail.description}</p>
+              {project.description && (
+                <p className="mb-3 text-[14px] text-[#717182]">{project.description}</p>
+              )}
               <div className="flex items-center gap-4 text-[13px] text-[#717182]">
-                <span>{mockProjectDetail.conversationCount} conversations</span>
-                <span className="font-mono">
-                  Created {new Date(mockProjectDetail.createdAt).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </span>
-                <span className="font-mono">
-                  Last activity {new Date(mockProjectDetail.lastActivity).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </span>
+                {project.conversation_count != null && (
+                  <span>{project.conversation_count} conversations</span>
+                )}
+                {createdAt && (
+                  <span className="font-mono">
+                    Created {new Date(createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </span>
+                )}
+                {lastActivity && (
+                  <span className="font-mono">
+                    Last activity {new Date(lastActivity).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </span>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -145,7 +127,7 @@ export default function ProjectDetail() {
 
       <div className="p-8">
         {/* Work Profile Scores (if assessed) */}
-        {mockProjectDetail.hasAssessment && (
+        {hasAssessment && workProfile && (
           <Card className="mb-6 border border-[rgba(0,0,0,0.08)] bg-white p-6 shadow-sm">
             <div className="mb-4 text-[13px] uppercase tracking-wider text-[#717182]">
               Project Work Profile
@@ -154,19 +136,19 @@ export default function ProjectDetail() {
               <div className="border-r border-[rgba(0,0,0,0.06)] pr-8">
                 <div className="mb-1 text-[13px] text-[#717182]">Human Leadership</div>
                 <div className="text-5xl tracking-tight" style={{ fontFamily: 'var(--font-serif)', color: 'var(--score-hls)' }}>
-                  {mockProjectDetail.workProfile.hls}
+                  {workProfile.hls ?? workProfile.human_leadership_score}
                 </div>
               </div>
               <div className="border-r border-[rgba(0,0,0,0.06)] pr-8">
                 <div className="mb-1 text-[13px] text-[#717182]">AI Execution Load</div>
                 <div className="text-5xl tracking-tight" style={{ fontFamily: 'var(--font-serif)', color: 'var(--score-execution)' }}>
-                  {(mockProjectDetail.workProfile.ai_execution_load * 100).toFixed(0)}%
+                  {((workProfile.ai_execution_load ?? 0) * 100).toFixed(0)}%
                 </div>
               </div>
               <div>
                 <div className="mb-1 text-[13px] text-[#717182]">Cognitive Amplification Index</div>
                 <div className="text-5xl tracking-tight" style={{ fontFamily: 'var(--font-serif)', color: 'var(--score-cai)' }}>
-                  {mockProjectDetail.workProfile.cai}
+                  {workProfile.cai}
                 </div>
               </div>
             </div>
@@ -200,42 +182,54 @@ export default function ProjectDetail() {
                   </Button>
                 </div>
               </div>
-              <div className="divide-y divide-[rgba(0,0,0,0.04)]">
-                {mockProjectDetail.conversations.map((conv) => (
-                  <Link
-                    key={conv.id}
-                    to={`/conversations/${conv.id}`}
-                    className="block px-6 py-5 hover:bg-[#FAFAFA] transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-6">
-                      <div className="flex-1">
-                        <div className="mb-1 text-[14px]">{conv.title}</div>
-                        <div className="mb-2 flex items-center gap-4 text-[13px] text-[#717182]">
-                          <span>{conv.turnCount} turns</span>
-                          <span>{conv.model}</span>
-                          <span className="font-mono">
-                            {new Date(conv.createdAt).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                            })}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {conv.tags.map((tag) => (
-                            <Badge
-                              key={tag}
-                              variant="outline"
-                              className="border-[rgba(0,0,0,0.08)] bg-white text-[11px] font-mono"
-                            >
-                              {tag}
-                            </Badge>
-                          ))}
+              {conversations.length === 0 ? (
+                <div className="px-6 py-8 text-center text-[13px] text-[#717182]">
+                  No conversations assigned to this project yet.
+                </div>
+              ) : (
+                <div className="divide-y divide-[rgba(0,0,0,0.04)]">
+                  {conversations.map((conv: any) => (
+                    <Link
+                      key={conv.id}
+                      to={`/conversations/${conv.id}`}
+                      className="block px-6 py-5 hover:bg-[#FAFAFA] transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-6">
+                        <div className="flex-1">
+                          <div className="mb-1 text-[14px]">{conv.title}</div>
+                          <div className="mb-2 flex items-center gap-4 text-[13px] text-[#717182]">
+                            {(conv.turn_count ?? conv.turnCount) != null && (
+                              <span>{conv.turn_count ?? conv.turnCount} turns</span>
+                            )}
+                            {conv.model && <span>{conv.model}</span>}
+                            {(conv.created_at ?? conv.createdAt) && (
+                              <span className="font-mono">
+                                {new Date(conv.created_at ?? conv.createdAt).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                })}
+                              </span>
+                            )}
+                          </div>
+                          {conv.tags?.length > 0 && (
+                            <div className="flex items-center gap-2">
+                              {conv.tags.map((tag: string) => (
+                                <Badge
+                                  key={tag}
+                                  variant="outline"
+                                  className="border-[rgba(0,0,0,0.08)] bg-white text-[11px] font-mono"
+                                >
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </Card>
           </TabsContent>
 
@@ -251,38 +245,44 @@ export default function ProjectDetail() {
                   </Button>
                 </div>
               </div>
-              <div className="divide-y divide-[rgba(0,0,0,0.04)]">
-                {mockProjectDetail.repos.map((repo) => (
-                  <div key={repo.id} className="px-6 py-5">
-                    <div className="flex items-start justify-between gap-6">
-                      <div className="flex-1">
-                        <div className="mb-2 flex items-center gap-3">
-                          <GitBranch className="h-4 w-4 text-[#717182]" />
-                          <span className="font-mono text-[14px]">{repo.url}</span>
+              {repos.length === 0 ? (
+                <div className="px-6 py-8 text-center text-[13px] text-[#717182]">
+                  No repositories attached.
+                </div>
+              ) : (
+                <div className="divide-y divide-[rgba(0,0,0,0.04)]">
+                  {repos.map((repo: any) => (
+                    <div key={repo.id} className="px-6 py-5">
+                      <div className="flex items-start justify-between gap-6">
+                        <div className="flex-1">
+                          <div className="mb-2 flex items-center gap-3">
+                            <GitBranch className="h-4 w-4 text-[#717182]" />
+                            <span className="font-mono text-[14px]">{repo.url}</span>
+                          </div>
+                          <div className="ml-7 flex items-center gap-4 text-[13px] text-[#717182]">
+                            {repo.branch && <span>Branch: {repo.branch}</span>}
+                            {repo.commits != null && <span>{repo.commits} commits analyzed</span>}
+                            {(repo.added_at ?? repo.addedAt) && (
+                              <span className="font-mono">
+                                Added {new Date(repo.added_at ?? repo.addedAt).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                })}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div className="ml-7 flex items-center gap-4 text-[13px] text-[#717182]">
-                          <span>Branch: {repo.branch}</span>
-                          <span>{repo.commits} commits analyzed</span>
-                          <span className="font-mono">
-                            Added {new Date(repo.addedAt).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                            })}
-                          </span>
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="sm">View Correlations</Button>
+                          <Button variant="ghost" size="sm">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm">
-                          View Correlations
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </Card>
 
             <Card className="border border-blue-200 bg-blue-50 p-6 shadow-sm">
@@ -313,35 +313,43 @@ export default function ProjectDetail() {
                   </Button>
                 </div>
               </div>
-              <div className="divide-y divide-[rgba(0,0,0,0.04)]">
-                {mockProjectDetail.masks.map((mask) => (
-                  <div key={mask.id} className="px-6 py-5">
-                    <div className="flex items-start justify-between gap-6">
-                      <div className="flex-1">
-                        <div className="mb-2 flex items-center gap-3">
-                          <Shield className="h-4 w-4 text-[#717182]" />
-                          <span className="font-mono text-[14px]">{mask.pattern}</span>
-                          <Badge variant="secondary" className="bg-[#F5F5F7]">
-                            {mask.type}
-                          </Badge>
+              {masks.length === 0 ? (
+                <div className="px-6 py-8 text-center text-[13px] text-[#717182]">
+                  No masks configured.
+                </div>
+              ) : (
+                <div className="divide-y divide-[rgba(0,0,0,0.04)]">
+                  {masks.map((mask: any) => (
+                    <div key={mask.id} className="px-6 py-5">
+                      <div className="flex items-start justify-between gap-6">
+                        <div className="flex-1">
+                          <div className="mb-2 flex items-center gap-3">
+                            <Shield className="h-4 w-4 text-[#717182]" />
+                            <span className="font-mono text-[14px]">{mask.pattern}</span>
+                            <Badge variant="secondary" className="bg-[#F5F5F7]">
+                              {mask.type}
+                            </Badge>
+                          </div>
+                          {(mask.created_at ?? mask.createdAt) && (
+                            <div className="ml-7 text-[13px] text-[#717182] font-mono">
+                              Created {new Date(mask.created_at ?? mask.createdAt).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })}
+                            </div>
+                          )}
                         </div>
-                        <div className="ml-7 text-[13px] text-[#717182] font-mono">
-                          Created {new Date(mask.createdAt).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="sm">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </Card>
 
             <Card className="border border-amber-200 bg-amber-50 p-6 shadow-sm">
@@ -352,8 +360,8 @@ export default function ProjectDetail() {
                 <div className="flex-1">
                   <h3 className="mb-1 text-[15px] text-amber-900">Content Masking</h3>
                   <p className="text-[13px] text-amber-800">
-                    Masks allow you to redact sensitive information (API keys, credentials, proprietary data)
-                    before generating proof pages. Patterns use regex syntax. Preview censored content before publishing.
+                    Masks allow you to redact sensitive information before generating proof pages.
+                    Patterns use regex syntax. Preview censored content before publishing.
                   </p>
                 </div>
               </div>
