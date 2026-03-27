@@ -1,0 +1,5 @@
+/* Editorial serif for big numbers - using a classic editorial font */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600;700&display=swap');
+
+/* System fonts for body text (already using default sans) */
+/* Monospace for forensic timestamps (using font-mono from Tailwind) */
