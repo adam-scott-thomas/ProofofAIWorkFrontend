@@ -253,8 +253,25 @@ export default function WorkProfile() {
             <div className="grid grid-cols-2 gap-4">
               {profile.unlocked_capabilities.domains.map((d: any) => (
                 <div key={d.name} className="rounded-md border border-[rgba(0,0,0,0.06)] bg-[#FAFAFA] p-4">
-                  <div className="mb-1 text-[14px] font-medium capitalize">{d.name}</div>
-                  <div className="inline-block rounded-sm bg-[#F5F5F7] px-2 py-0.5 text-[12px] text-[#717182] capitalize">{d.proficiency}</div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <div className="text-[14px] font-medium capitalize">{d.name.replace(/_/g, " ")}</div>
+                    {d.percentile != null && (
+                      <div className="font-mono text-[13px] text-emerald-700">p{d.percentile}</div>
+                    )}
+                  </div>
+                  {d.percentile != null ? (
+                    <div className="mt-2">
+                      <div className="h-2 overflow-hidden rounded-full bg-[#F5F5F7]">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
+                          style={{ width: `${d.percentile}%` }}
+                        />
+                      </div>
+                      <div className="mt-1 text-[11px] text-[#717182] capitalize">{d.benchmark_level ?? d.proficiency} level</div>
+                    </div>
+                  ) : (
+                    <div className="inline-block rounded-sm bg-[#F5F5F7] px-2 py-0.5 text-[12px] text-[#717182] capitalize">{d.proficiency}</div>
+                  )}
                 </div>
               ))}
             </div>

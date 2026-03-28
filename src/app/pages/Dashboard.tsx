@@ -144,7 +144,7 @@ export default function Dashboard() {
                 <div className="mt-2 flex flex-wrap gap-1">
                   {workProfile.unlocked_capabilities.domains?.slice(0, 4).map((d: any) => (
                     <span key={d.name} className="rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] text-emerald-700 capitalize">
-                      {d.name.replace("_", " ")}
+                      {d.name.replace(/_/g, " ")}{d.percentile != null ? ` · p${d.percentile}` : ""}
                     </span>
                   ))}
                   {(workProfile.unlocked_capabilities.domains?.length ?? 0) > 4 && (
