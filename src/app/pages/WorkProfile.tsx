@@ -6,17 +6,20 @@ import { useState } from "react";
 import { ShareDialog } from "../components/ShareDialog";
 import { useWorkProfile, useCurrentUser } from "../../hooks/useApi";
 
-function DimensionBar({ label, value }: { label: string; value: number }) {
+function DimensionBar({ label, value, max = 1 }: { label: string; value: number; max?: number }) {
+  const pct = max <= 1 ? value * 100 : (value / max) * 100;
+  const display = max <= 1 ? Math.round(value * 100) : value.toFixed(1);
+  const suffix = max <= 1 ? "/100" : `/${max}`;
   return (
     <div>
       <div className="mb-2 flex items-center justify-between text-[13px]">
         <span className="text-[#3A3A3A]">{label}</span>
-        <span className="font-mono text-[#717182]">{value}/100</span>
+        <span className="font-mono text-[#717182]">{display}{suffix}</span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-[#F5F5F7]">
         <div
           className="h-full rounded-full bg-gradient-to-r from-[#6B46C1] to-[#8B5CF6]"
-          style={{ width: `${value}%` }}
+          style={{ width: `${Math.min(pct, 100)}%` }}
         />
       </div>
     </div>
@@ -219,12 +222,12 @@ export default function WorkProfile() {
               </p>
             </div>
             <div className="space-y-4">
-              {caiDimensions.complexity_ceiling != null && <DimensionBar label="Complexity Ceiling" value={caiDimensions.complexity_ceiling} />}
-              {caiDimensions.iteration_depth != null && <DimensionBar label="Iteration Depth" value={caiDimensions.iteration_depth} />}
-              {caiDimensions.velocity != null && <DimensionBar label="Velocity" value={caiDimensions.velocity} />}
-              {caiDimensions.domain_span != null && <DimensionBar label="Domain Span" value={caiDimensions.domain_span} />}
-              {caiDimensions.throughput != null && <DimensionBar label="Throughput" value={caiDimensions.throughput} />}
-              {caiDimensions.leverage_maturity != null && <DimensionBar label="Leverage Maturity" value={caiDimensions.leverage_maturity} />}
+              {caiDimensions.complexity_ceiling != null && <DimensionBar label="Complexity Ceiling" value={caiDimensions.complexity_ceiling} max={5} />}
+              {caiDimensions.iteration_depth != null && <DimensionBar label="Iteration Depth" value={caiDimensions.iteration_depth} max={10} />}
+              {caiDimensions.velocity != null && <DimensionBar label="Velocity" value={caiDimensions.velocity} max={10} />}
+              {caiDimensions.domain_span != null && <DimensionBar label="Domain Span" value={caiDimensions.domain_span} max={10} />}
+              {caiDimensions.throughput != null && <DimensionBar label="Throughput" value={caiDimensions.throughput} max={10} />}
+              {caiDimensions.leverage_maturity != null && <DimensionBar label="Leverage Maturity" value={caiDimensions.leverage_maturity} max={10} />}
             </div>
           </Card>
         )}
