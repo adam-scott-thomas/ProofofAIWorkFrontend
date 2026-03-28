@@ -208,6 +208,7 @@ export default function WorkProfile() {
               {hlsDimensions.correction_pressure != null && <DimensionBar label="Correction Pressure" value={hlsDimensions.correction_pressure} />}
               {hlsDimensions.strategic_pivots != null && <DimensionBar label="Strategic Pivots" value={hlsDimensions.strategic_pivots} />}
               {hlsDimensions.final_ownership != null && <DimensionBar label="Final Ownership" value={hlsDimensions.final_ownership} />}
+              {hlsDimensions.continuity != null && hlsDimensions.continuity > 0 && <DimensionBar label="Continuity" value={hlsDimensions.continuity} />}
             </div>
           </Card>
         )}
@@ -228,6 +229,26 @@ export default function WorkProfile() {
               {caiDimensions.domain_span != null && <DimensionBar label="Domain Span" value={caiDimensions.domain_span} max={10} />}
               {caiDimensions.throughput != null && <DimensionBar label="Throughput" value={caiDimensions.throughput} max={10} />}
               {caiDimensions.leverage_maturity != null && <DimensionBar label="Leverage Maturity" value={caiDimensions.leverage_maturity} max={10} />}
+            </div>
+          </Card>
+        )}
+
+        {/* Unlocked Capabilities */}
+        {profile.unlocked_capabilities && profile.unlocked_capabilities.count > 0 && (
+          <Card className="mb-8 border border-[rgba(0,0,0,0.08)] bg-white p-8 shadow-sm">
+            <div className="mb-6">
+              <h3 className="mb-1 text-[15px]">Unlocked Capabilities</h3>
+              <p className="text-[13px] text-[#717182]">
+                Domains this user could not work in before AI — {profile.unlocked_capabilities.count} new capabilities
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {profile.unlocked_capabilities.domains.map((d: any) => (
+                <div key={d.name} className="rounded-md border border-[rgba(0,0,0,0.06)] bg-[#FAFAFA] p-4">
+                  <div className="mb-1 text-[14px] font-medium capitalize">{d.name}</div>
+                  <div className="inline-block rounded-sm bg-[#F5F5F7] px-2 py-0.5 text-[12px] text-[#717182] capitalize">{d.proficiency}</div>
+                </div>
+              ))}
             </div>
           </Card>
         )}

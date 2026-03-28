@@ -120,11 +120,21 @@ export default function Dashboard() {
             </div>
 
             <div>
-              <div className="mb-2 text-[13px] text-[#717182]">Cognitive Amplification</div>
+              <div className="mb-2 text-[13px] text-[#717182]">Amplified Capabilities</div>
               <div className="mb-1 text-6xl tracking-tight" style={{ fontFamily: 'var(--font-serif)', color: 'var(--score-cai)' }}>
-                {cai}x
+                {workProfile?.amplified_capabilities ?? cai}x
               </div>
-              <div className="text-[13px] text-[#717182]">capacity multiplier</div>
+              <div className="text-[13px] text-[#717182]">existing skills boosted</div>
+              {(workProfile?.unlocked_capabilities?.count ?? 0) > 0 && (
+                <div className="mt-3 rounded-sm bg-[#F5F5F7] px-3 py-2">
+                  <div className="text-[13px] font-semibold">
+                    +{workProfile.unlocked_capabilities.count} new domains unlocked
+                  </div>
+                  <div className="text-[12px] text-[#717182]">
+                    {workProfile.unlocked_capabilities.domains?.map((d: any) => d.name).join(", ")}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
