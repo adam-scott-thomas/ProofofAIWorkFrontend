@@ -82,12 +82,8 @@ export default function PublicProofPage() {
       {/* Header */}
       <header className="border-b border-[rgba(0,0,0,0.08)] bg-white">
         <div className="mx-auto max-w-3xl px-8 py-6">
-          <div className="mb-3 flex items-center gap-2 text-[13px] text-[#717182]">
-            <span>Proof of AI Work</span>
-            <span>-</span>
-            <span>Student Report</span>
-          </div>
-          <h1 className="mb-3 text-4xl md:text-5xl font-bold tracking-tight">{headline}</h1>
+          <h1 className="mb-2 text-4xl md:text-5xl font-bold tracking-tight">Proof of AI Work</h1>
+          <p className="mb-3 text-[15px] text-[#717182]">{headline}</p>
           <div className="flex items-center gap-4">
             {publishedAt && (
               <div className="flex items-center gap-2 text-[13px] text-[#717182]">
