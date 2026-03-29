@@ -103,15 +103,17 @@ export default function StudentSubmit() {
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("PUT", presign.presigned_url);
-        xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
         const token = localStorage.getItem("poaw-token");
         if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+        // Don't set Content-Type — let FormData set multipart boundary
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) setProgress(Math.round(fileBase + (e.loaded / e.total) * fileRange));
         };
         xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`)));
         xhr.onerror = () => reject(new Error("Network error during upload"));
-        xhr.send(file);
+        const formData = new FormData();
+        formData.append("file", file);
+        xhr.send(formData);
       });
 
       await completeMutation.mutateAsync({ upload_id: presign.upload_id });
