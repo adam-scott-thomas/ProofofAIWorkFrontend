@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Shield, Calendar, Loader2, AlertCircle } from "lucide-react";
 import { Badge } from "../components/ui/badge";
 import { Card } from "../components/ui/card";
+import { apiFetch } from "../../lib/api";
 
 const DIMENSION_LABELS: Record<string, { label: string; desc: string }> = {
   clarity: { label: "Clarity of direction", desc: "How clearly the user stated what they needed" },
@@ -32,11 +33,7 @@ export default function PublicProofPage() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["public-proof", slug],
-    queryFn: async () => {
-      const res = await fetch(`/api/v1/p/${slug}`);
-      if (!res.ok) throw new Error("Proof page not found");
-      return res.json();
-    },
+    queryFn: () => apiFetch<any>(`/p/${slug}`),
     enabled: !!slug,
   });
 
