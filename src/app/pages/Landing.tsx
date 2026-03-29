@@ -57,12 +57,7 @@ export default function Landing() {
         <div className="flex gap-4 justify-center">
           <Link to="/student">
             <Button size="lg" className="bg-blue-600 hover:bg-blue-500 text-lg px-8 py-6">
-              Student Dashboard <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-          </Link>
-          <Link to="/professional/dashboard">
-            <Button size="lg" variant="outline" className="border-gray-500 text-white hover:bg-gray-800 text-lg px-8 py-6">
-              Professional Dashboard <ArrowRight className="w-5 h-5 ml-2" />
+              Dashboard <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </Link>
         </div>
@@ -215,12 +210,7 @@ export default function Landing() {
         <div className="flex gap-4 justify-center">
           <Link to="/student">
             <Button size="lg" className="bg-blue-600 hover:bg-blue-500 text-lg px-8 py-6">
-              Student Dashboard <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-          </Link>
-          <Link to="/professional/dashboard">
-            <Button size="lg" variant="outline" className="border-gray-500 text-white hover:bg-gray-800 text-lg px-8 py-6">
-              Professional Dashboard <ArrowRight className="w-5 h-5 ml-2" />
+              Dashboard <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </Link>
         </div>
