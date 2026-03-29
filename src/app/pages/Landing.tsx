@@ -55,9 +55,14 @@ export default function Landing() {
           AI leverage, and cognitive amplification. Share proof of how you work with AI.
         </p>
         <div className="flex gap-4 justify-center">
-          <Link to={isAuthenticated() ? "/dashboard" : "/sign-in"}>
+          <Link to="/student/dashboard">
             <Button size="lg" className="bg-blue-600 hover:bg-blue-500 text-lg px-8 py-6">
-              {isAuthenticated() ? "Go to Dashboard" : "Get Started"} <ArrowRight className="w-5 h-5 ml-2" />
+              Student Dashboard <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+          </Link>
+          <Link to="/professional/dashboard">
+            <Button size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-800 text-lg px-8 py-6">
+              Professional Dashboard <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </Link>
         </div>
@@ -208,15 +213,14 @@ export default function Landing() {
         <h2 className="text-3xl font-bold mb-4">Ready to prove your work?</h2>
         <p className="text-gray-400 mb-8">Upload your first conversation export and get scored in minutes.</p>
         <div className="flex gap-4 justify-center">
-          <Link to={isAuthenticated() ? "/dashboard" : "/sign-in"}>
+          <Link to="/student/dashboard">
             <Button size="lg" className="bg-blue-600 hover:bg-blue-500 text-lg px-8 py-6">
-              {isAuthenticated() ? "Go to Dashboard" : "Get Started Free"} <ArrowRight className="w-5 h-5 ml-2" />
+              Student Dashboard <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </Link>
-          <Link to={isAuthenticated() ? "/student" : "/sign-in?next=/student"}>
+          <Link to="/professional/dashboard">
             <Button size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-800 text-lg px-8 py-6">
-              <GraduationCap className="w-5 h-5 mr-2" />
-              I'm a student
+              Professional Dashboard <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </Link>
         </div>
