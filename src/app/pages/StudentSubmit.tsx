@@ -207,21 +207,20 @@ export default function StudentSubmit() {
       setStep("creating");
       setProgress(96);
 
-      // The `complete` endpoint already created an assessment.
-      // We just need its ID, then update task_context and dispatch the evaluation.
-      // The assessment_id was returned by the last complete call.
-      // For multi-file: all files share the same assessment from the first complete call.
-      // Get the assessment_id from the complete response (stored during uploadFiles).
+      // The `complete` endpoint already created an assessment + uploads + dispatched parsing.
+      // Once parsing is done, we just need the assessment_id to navigate to processing.
+      // The Celery evaluation task is dispatched by the backend after parsing completes.
       const assessmentId = lastAssessmentId;
       if (!assessmentId) throw new Error("No assessment created. Please try again.");
 
-      // Update assessment with task_context and dispatch evaluation
+      // Update task_context on the assessment so the evaluator has assignment context
       const fullContext = delivIds.length > 0
         ? taskContext + `\n[DELIVERABLE_UPLOAD_IDS: ${delivIds.join(",")}]`
         : taskContext;
-
-      // Patch task_context onto the assessment and trigger evaluation
-      await apiPost<any>(`/assessments/${assessmentId}/rerun`, {});
+      await apiFetch(`/assessments/${assessmentId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ task_context: fullContext }),
+      }).catch(() => {}); // Best-effort — evaluation works without it
 
       setProgress(100);
       setStep("done");
