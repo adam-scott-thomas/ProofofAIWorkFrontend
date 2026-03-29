@@ -8,7 +8,7 @@ import { useBilling, useSubscribe, useSetModelTier } from "../../hooks/useApi";
 const MODEL_TIERS = [
   { id: "free", label: "Standard", model: "GPT-4o Mini", desc: "Fast, good for most work", icon: Zap },
   { id: "paid", label: "Enhanced", model: "GPT-4o", desc: "Deeper analysis, better judgment calls", icon: Shield },
-  { id: "premium", label: "Premium", model: "Claude Opus", desc: "Best available — maximum quality", icon: Crown },
+  { id: "premium", label: "Premium", model: "OpenAI o3", desc: "Deep reasoning — maximum quality", icon: Crown },
 ] as const;
 
 export default function Billing() {
