@@ -222,7 +222,7 @@ export default function StudentSubmit() {
               >
                 <UploadIcon className="mx-auto mb-2 h-6 w-6 text-[#717182]" />
                 <p className="mb-1 text-[13px] text-[#030213]">Drop conversation exports here</p>
-                <p className="mb-3 text-[11px] text-[#717182]">JSON, JSONL, ZIP, or TXT — multiple files OK</p>
+                <p className="mb-3 text-[11px] text-[#717182]">JSON, TXT, Markdown, ZIP — any chat export format</p>
                 <label className="cursor-pointer">
                   <span className="inline-flex items-center gap-2 rounded-md bg-[#030213] px-3 py-1.5 text-[12px] font-medium text-white hover:bg-[#1a1a2e]">
                     <UploadIcon className="h-3.5 w-3.5" /> Choose files
