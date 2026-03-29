@@ -18,8 +18,9 @@ import { Card, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Progress } from "../components/ui/progress";
 
-const ALLOWED_EXTENSIONS = ["txt", "json", "zip", "jsonl"] as const;
-type AllowedExt = (typeof ALLOWED_EXTENSIONS)[number];
+const CONVO_EXTENSIONS = ["txt", "json", "zip", "jsonl"] as const;
+const DELIVERABLE_EXTENSIONS = ["txt", "pdf", "docx", "doc", "md", "py", "js", "ts", "jsx", "tsx", "html", "css", "java", "c", "cpp", "zip"] as const;
+type ConvoExt = (typeof CONVO_EXTENSIONS)[number];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 type SubmitStep = "form" | "uploading" | "creating" | "done" | "error";
@@ -28,10 +29,17 @@ type InputMode = "file" | "paste";
 export default function StudentSubmit() {
   const navigate = useNavigate();
 
-  // Form state
-  const [files, setFiles] = useState<File[]>([]);
-  const [pastedText, setPastedText] = useState("");
-  const [inputMode, setInputMode] = useState<InputMode>("file");
+  // Conversation input
+  const [convoFiles, setConvoFiles] = useState<File[]>([]);
+  const [convoPastedText, setConvoPastedText] = useState("");
+  const [convoMode, setConvoMode] = useState<InputMode>("file");
+
+  // Deliverable input (what they turned in)
+  const [deliverableFiles, setDeliverableFiles] = useState<File[]>([]);
+  const [deliverablePastedText, setDeliverablePastedText] = useState("");
+  const [deliverableMode, setDeliverableMode] = useState<InputMode>("file");
+
+  // Assignment context
   const [className, setClassName] = useState("");
   const [assignmentName, setAssignmentName] = useState("");
   const [aiTools, setAiTools] = useState("");
@@ -41,126 +49,139 @@ export default function StudentSubmit() {
   const [step, setStep] = useState<SubmitStep>("form");
   const [progress, setProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
-  const [isDragging, setIsDragging] = useState(false);
+  const [convoIsDragging, setConvoIsDragging] = useState(false);
+  const [delivIsDragging, setDelivIsDragging] = useState(false);
 
   const presignMutation = usePresignUpload();
   const completeMutation = useCompleteUpload();
 
-  const validateFile = (f: File): string | null => {
+  const validateFile = (f: File, allowedExts: readonly string[]): string | null => {
     if (f.size > MAX_FILE_SIZE) return `${f.name} is too large (${(f.size / 1024 / 1024).toFixed(1)} MB). Maximum is 10 MB.`;
     if (f.size === 0) return `${f.name} is empty.`;
     const ext = f.name.split(".").pop()?.toLowerCase();
-    if (!ext || !ALLOWED_EXTENSIONS.includes(ext as AllowedExt))
-      return `${f.name}: unsupported file type. Upload ${ALLOWED_EXTENSIONS.join(", ")} exports.`;
+    if (!ext || !allowedExts.includes(ext))
+      return `${f.name}: unsupported file type.`;
     return null;
   };
 
-  const addFiles = (newFiles: File[]) => {
+  const addConvoFiles = (newFiles: File[]) => {
     for (const f of newFiles) {
-      const err = validateFile(f);
-      if (err) {
-        setErrorMsg(err);
-        setStep("error");
-        return;
-      }
+      const err = validateFile(f, CONVO_EXTENSIONS);
+      if (err) { setErrorMsg(err); setStep("error"); return; }
     }
-    setFiles((prev) => [...prev, ...newFiles]);
-    setErrorMsg("");
-    setStep("form");
+    setConvoFiles((prev) => [...prev, ...newFiles]);
+    setErrorMsg(""); setStep("form");
   };
 
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+  const addDeliverableFiles = (newFiles: File[]) => {
+    for (const f of newFiles) {
+      const err = validateFile(f, DELIVERABLE_EXTENSIONS);
+      if (err) { setErrorMsg(err); setStep("error"); return; }
+    }
+    setDeliverableFiles((prev) => [...prev, ...newFiles]);
+    setErrorMsg(""); setStep("form");
   };
 
-  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
-  const handleDragLeave = () => setIsDragging(false);
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const dropped = Array.from(e.dataTransfer.files);
-    if (dropped.length > 0) addFiles(dropped);
-  };
+  const hasConvo = convoMode === "file" ? convoFiles.length > 0 : convoPastedText.trim().length > 20;
 
-  const hasInput = inputMode === "file" ? files.length > 0 : pastedText.trim().length > 20;
+  // Helper: upload a list of files, return their upload_ids
+  const uploadFiles = async (filesToUpload: File[], progressBase: number, progressRange: number): Promise<string[]> => {
+    const ids: string[] = [];
+    for (let i = 0; i < filesToUpload.length; i++) {
+      const file = filesToUpload[i];
+      const fileBase = progressBase + (i / filesToUpload.length) * progressRange;
+      const fileRange = progressRange / filesToUpload.length;
+
+      const ext = file.name.split(".").pop()?.toLowerCase() || "txt";
+      const presign = await presignMutation.mutateAsync({
+        file_name: file.name,
+        file_type: ext,
+        file_size_bytes: file.size,
+        allow_data_use: false,
+      });
+
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", presign.presigned_url);
+        xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) setProgress(Math.round(fileBase + (e.loaded / e.total) * fileRange));
+        };
+        xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`)));
+        xhr.onerror = () => reject(new Error("Network error during upload"));
+        xhr.send(file);
+      });
+
+      await completeMutation.mutateAsync({ upload_id: presign.upload_id });
+      ids.push(String(presign.upload_id));
+    }
+    return ids;
+  };
 
   const handleSubmit = useCallback(async () => {
-    if (!hasInput || !assignmentName.trim()) return;
+    if (!hasConvo || !assignmentName.trim()) return;
+
+    const hasDeliverable = deliverableMode === "file" ? deliverableFiles.length > 0 : deliverablePastedText.trim().length > 20;
 
     const taskContext = [
       className.trim() && `Class: ${className.trim()}`,
       `Assignment: ${assignmentName.trim()}`,
       aiTools.trim() && `AI tools used: ${aiTools.trim()}`,
       description.trim() && `Description: ${description.trim()}`,
+      hasDeliverable && `[DELIVERABLE ATTACHED — final submitted work included for authorship comparison]`,
     ].filter(Boolean).join("\n");
 
     setStep("uploading");
     setProgress(0);
 
     try {
-      // Build file list — if paste mode, convert text to a .txt file
-      let filesToUpload: File[];
-      if (inputMode === "paste") {
-        const blob = new Blob([pastedText], { type: "text/plain" });
-        filesToUpload = [new File([blob], "pasted-conversation.txt", { type: "text/plain" })];
+      // Build conversation file list
+      let convoToUpload: File[];
+      if (convoMode === "paste") {
+        const blob = new Blob([convoPastedText], { type: "text/plain" });
+        convoToUpload = [new File([blob], "pasted-conversation.txt", { type: "text/plain" })];
       } else {
-        filesToUpload = files;
+        convoToUpload = convoFiles;
       }
 
-      const totalFiles = filesToUpload.length;
-      const uploadIds: string[] = [];
-
-      for (let i = 0; i < totalFiles; i++) {
-        const file = filesToUpload[i];
-        const fileProgressBase = (i / totalFiles) * 60;
-        const fileProgressRange = 60 / totalFiles;
-
-        // 1. Presign
-        const ext = file.name.split(".").pop()?.toLowerCase() as AllowedExt;
-        const presign = await presignMutation.mutateAsync({
-          file_name: file.name,
-          file_type: ext,
-          file_size_bytes: file.size,
-          allow_data_use: false,
-        });
-
-        // 2. Upload to S3
-        await new Promise<void>((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.open("PUT", presign.presigned_url);
-          xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
-          xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) {
-              setProgress(Math.round(fileProgressBase + (e.loaded / e.total) * fileProgressRange));
-            }
-          };
-          xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`)));
-          xhr.onerror = () => reject(new Error("Network error during upload"));
-          xhr.send(file);
-        });
-
-        // 3. Complete upload (triggers parsing)
-        await completeMutation.mutateAsync({ upload_id: presign.upload_id });
-        uploadIds.push(String(presign.upload_id));
+      // Build deliverable file list
+      let delivToUpload: File[] = [];
+      if (hasDeliverable) {
+        if (deliverableMode === "paste") {
+          const blob = new Blob([deliverablePastedText], { type: "text/plain" });
+          delivToUpload = [new File([blob], "final-deliverable.txt", { type: "text/plain" })];
+        } else {
+          delivToUpload = deliverableFiles;
+        }
       }
+
+      const totalFiles = convoToUpload.length + delivToUpload.length;
+      const convoProgressRange = (convoToUpload.length / totalFiles) * 60;
+      const delivProgressRange = (delivToUpload.length / totalFiles) * 60;
+
+      // Upload conversations (0% → convoRange%)
+      const convoIds = await uploadFiles(convoToUpload, 0, convoProgressRange);
+
+      // Upload deliverables (convoRange% → 60%)
+      const delivIds = delivToUpload.length > 0
+        ? await uploadFiles(delivToUpload, convoProgressRange, delivProgressRange)
+        : [];
 
       setProgress(65);
 
-      // 4. Poll parse status for the last upload (good enough indicator)
-      const lastUploadId = uploadIds[uploadIds.length - 1];
+      // Poll parse status for last conversation upload
+      const lastConvoId = convoIds[convoIds.length - 1];
       const parseStart = Date.now();
       let parsed = false;
       for (let i = 0; i < 300; i++) {
         await new Promise((r) => setTimeout(r, 1000));
         try {
           const status = await apiFetch<{ status: string; conversations_found: number; conversations_parsed: number }>(
-            `/uploads/parse-status/${lastUploadId}`
+            `/uploads/parse-status/${lastConvoId}`
           );
           const found = status.conversations_found || 0;
           const done = status.conversations_parsed || 0;
-          const parsePct = found > 0 ? Math.round((done / found) * 30) : 0;
-          setProgress(65 + parsePct);
-
+          setProgress(65 + (found > 0 ? Math.round((done / found) * 30) : 0));
           if (status.status === "complete") { parsed = true; break; }
           if (status.status === "failed") throw new Error("Parsing failed. Please try a different file.");
         } catch (e) {
@@ -168,35 +189,30 @@ export default function StudentSubmit() {
         }
         if (Date.now() - parseStart > 5 * 60 * 1000) break;
       }
-      if (!parsed) {
-        setProgress(95);
-      }
+      if (!parsed) setProgress(95);
 
       setStep("creating");
       setProgress(96);
 
-      // 5. Create assessment with ALL upload_ids
+      // Create assessment with all upload_ids (conversations + deliverables)
       const assessment = await apiPost<{ id: string; status: string }>("/assessments", {
-        upload_ids: uploadIds,
+        upload_ids: [...convoIds, ...delivIds],
         task_context: taskContext,
       });
 
       setProgress(100);
       setStep("done");
 
-      // 6. Navigate to processing
-      setTimeout(() => {
-        navigate(`/student/processing/${assessment.id}`);
-      }, 800);
+      setTimeout(() => navigate(`/student/processing/${assessment.id}`), 800);
 
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : "Something went wrong. Please try again.");
       setStep("error");
     }
-  }, [files, pastedText, inputMode, className, assignmentName, aiTools, description, hasInput, presignMutation, completeMutation, navigate]);
+  }, [convoFiles, convoPastedText, convoMode, deliverableFiles, deliverablePastedText, deliverableMode, className, assignmentName, aiTools, description, hasConvo, presignMutation, completeMutation, navigate]);
 
   const isSubmitting = step === "uploading" || step === "creating";
-  const canSubmit = hasInput && assignmentName.trim() && !isSubmitting;
+  const canSubmit = hasConvo && assignmentName.trim() && !isSubmitting;
 
   return (
     <div>
@@ -214,98 +230,64 @@ export default function StudentSubmit() {
         </p>
       </div>
 
-      {/* Input mode tabs */}
+      {/* Section 1: AI Conversation */}
       <Card className="mb-6 border border-[rgba(0,0,0,0.08)] bg-white shadow-sm">
         <CardContent className="p-6">
+          <div className="mb-1 flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-[12px] font-bold text-blue-600">1</div>
+            <h2 className="text-[15px] font-medium text-[#030213]">Your AI conversation</h2>
+            <span className="text-[12px] text-red-500">*</span>
+          </div>
+          <p className="mb-4 text-[12px] text-[#717182]">The chat log between you and the AI — this is what we analyze</p>
+
           <div className="mb-4 flex gap-2">
-            <button
-              onClick={() => setInputMode("file")}
-              disabled={isSubmitting}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
-                inputMode === "file"
-                  ? "bg-[#030213] text-white"
-                  : "bg-[#F5F5F7] text-[#717182] hover:bg-[#EAEAED]"
-              }`}
-            >
-              <UploadIcon className="h-3.5 w-3.5" />
-              Upload files
+            <button onClick={() => setConvoMode("file")} disabled={isSubmitting}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${convoMode === "file" ? "bg-[#030213] text-white" : "bg-[#F5F5F7] text-[#717182] hover:bg-[#EAEAED]"}`}>
+              <UploadIcon className="h-3.5 w-3.5" /> Upload files
             </button>
-            <button
-              onClick={() => setInputMode("paste")}
-              disabled={isSubmitting}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
-                inputMode === "paste"
-                  ? "bg-[#030213] text-white"
-                  : "bg-[#F5F5F7] text-[#717182] hover:bg-[#EAEAED]"
-              }`}
-            >
-              <Type className="h-3.5 w-3.5" />
-              Paste text
+            <button onClick={() => setConvoMode("paste")} disabled={isSubmitting}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${convoMode === "paste" ? "bg-[#030213] text-white" : "bg-[#F5F5F7] text-[#717182] hover:bg-[#EAEAED]"}`}>
+              <Type className="h-3.5 w-3.5" /> Paste text
             </button>
           </div>
 
-          {inputMode === "file" ? (
+          {convoMode === "file" ? (
             <>
-              <label className="mb-2 block text-[13px] font-medium text-[#030213]">
-                AI conversation exports <span className="text-red-500">*</span>
-              </label>
-
-              {/* Drop zone */}
               <div
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                className={`cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-all ${
-                  isDragging
-                    ? "border-blue-400 bg-blue-50"
-                    : "border-[rgba(0,0,0,0.12)] hover:border-[rgba(0,0,0,0.2)]"
-                }`}
+                onDragOver={(e) => { e.preventDefault(); setConvoIsDragging(true); }}
+                onDragLeave={() => setConvoIsDragging(false)}
+                onDrop={(e) => { e.preventDefault(); setConvoIsDragging(false); const d = Array.from(e.dataTransfer.files); if (d.length) addConvoFiles(d); }}
+                className={`cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-all ${convoIsDragging ? "border-blue-400 bg-blue-50" : "border-[rgba(0,0,0,0.12)] hover:border-[rgba(0,0,0,0.2)]"}`}
               >
                 <UploadIcon className="mx-auto mb-2 h-6 w-6 text-[#717182]" />
-                <p className="mb-1 text-[13px] text-[#030213]">Drop files here or click to browse</p>
-                <p className="mb-3 text-[11px] text-[#717182]">
-                  JSON, JSONL, ZIP, or TXT — multiple files OK
-                </p>
+                <p className="mb-1 text-[13px] text-[#030213]">Drop conversation exports here</p>
+                <p className="mb-3 text-[11px] text-[#717182]">JSON, JSONL, ZIP, or TXT — multiple files OK</p>
                 <label className="cursor-pointer">
                   <span className="inline-flex items-center gap-2 rounded-md bg-[#030213] px-3 py-1.5 text-[12px] font-medium text-white hover:bg-[#1a1a2e]">
-                    <UploadIcon className="h-3.5 w-3.5" />
-                    Choose files
+                    <UploadIcon className="h-3.5 w-3.5" /> Choose files
                   </span>
-                  <input
-                    type="file"
-                    accept=".txt,.json,.zip,.jsonl"
-                    multiple
-                    onChange={(e) => {
-                      const selected = Array.from(e.target.files ?? []);
-                      if (selected.length > 0) addFiles(selected);
-                      e.target.value = "";
-                    }}
-                    className="hidden"
-                  />
+                  <input type="file" accept=".txt,.json,.zip,.jsonl" multiple
+                    onChange={(e) => { const s = Array.from(e.target.files ?? []); if (s.length) addConvoFiles(s); e.target.value = ""; }} className="hidden" />
                 </label>
               </div>
-
-              {/* File list */}
-              {files.length > 0 && (
+              {convoFiles.length > 0 && (
                 <div className="mt-3 space-y-2">
-                  {files.map((f, i) => (
-                    <div key={`${f.name}-${i}`} className="flex items-center gap-3 rounded-lg border border-[rgba(0,0,0,0.08)] bg-[#F5F5F7] px-4 py-3">
+                  {convoFiles.map((f, i) => (
+                    <div key={`c-${f.name}-${i}`} className="flex items-center gap-3 rounded-lg border border-[rgba(0,0,0,0.08)] bg-[#F5F5F7] px-4 py-3">
                       <FileText className="h-5 w-5 flex-shrink-0 text-blue-600" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[13px] font-medium text-[#030213]">{f.name}</p>
                         <p className="text-[11px] text-[#717182]">{(f.size / 1024 / 1024).toFixed(2)} MB</p>
                       </div>
                       {!isSubmitting && (
-                        <button onClick={() => removeFile(i)} className="text-[#717182] hover:text-red-500">
+                        <button onClick={() => setConvoFiles((p) => p.filter((_, j) => j !== i))} className="text-[#717182] hover:text-red-500">
                           <X className="h-4 w-4" />
                         </button>
                       )}
                     </div>
                   ))}
-                  <p className="text-[11px] text-[#717182]">{files.length} file{files.length !== 1 ? "s" : ""} selected</p>
                 </div>
               )}
-
               <p className="mt-3 text-[11px] text-[#717182]">
                 How to export: <strong>ChatGPT</strong> → Settings → Data controls → Export data.{" "}
                 <strong>Claude</strong> → Settings → Export conversations.
@@ -313,20 +295,85 @@ export default function StudentSubmit() {
             </>
           ) : (
             <>
-              <label className="mb-2 block text-[13px] font-medium text-[#030213]">
-                Paste your AI conversation <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                value={pastedText}
-                onChange={(e) => setPastedText(e.target.value)}
-                placeholder={"Paste the full conversation here. Include both your messages and the AI's responses.\n\nExample:\nYou: Can you help me outline my research paper on climate policy?\nAI: Sure! Let's start by identifying your thesis..."}
-                disabled={isSubmitting}
-                rows={12}
-                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              />
+              <textarea value={convoPastedText} onChange={(e) => setConvoPastedText(e.target.value)}
+                placeholder={"Paste the full conversation here. Include both your messages and the AI's responses.\n\nExample:\nYou: Can you help me outline my research paper?\nAI: Sure! Let's start by identifying your thesis..."}
+                disabled={isSubmitting} rows={10}
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
               <p className="mt-2 text-[11px] text-[#717182]">
-                {pastedText.length > 0 ? `${pastedText.length.toLocaleString()} characters` : "Minimum 20 characters"}
-                {" — "}Copy/paste from ChatGPT, Claude, or any AI chat window.
+                {convoPastedText.length > 0 ? `${convoPastedText.length.toLocaleString()} characters` : "Minimum 20 characters"}
+              </p>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Section 2: Final Deliverable */}
+      <Card className="mb-6 border border-[rgba(0,0,0,0.08)] bg-white shadow-sm">
+        <CardContent className="p-6">
+          <div className="mb-1 flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-100 text-[12px] font-bold text-purple-600">2</div>
+            <h2 className="text-[15px] font-medium text-[#030213]">What you turned in</h2>
+            <span className="text-[12px] text-[#717182]">optional</span>
+          </div>
+          <p className="mb-4 text-[12px] text-[#717182]">Your final paper, code, or deliverable — so we can compare it against the AI conversation</p>
+
+          <div className="mb-4 flex gap-2">
+            <button onClick={() => setDeliverableMode("file")} disabled={isSubmitting}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${deliverableMode === "file" ? "bg-[#030213] text-white" : "bg-[#F5F5F7] text-[#717182] hover:bg-[#EAEAED]"}`}>
+              <UploadIcon className="h-3.5 w-3.5" /> Upload files
+            </button>
+            <button onClick={() => setDeliverableMode("paste")} disabled={isSubmitting}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${deliverableMode === "paste" ? "bg-[#030213] text-white" : "bg-[#F5F5F7] text-[#717182] hover:bg-[#EAEAED]"}`}>
+              <Type className="h-3.5 w-3.5" /> Paste text
+            </button>
+          </div>
+
+          {deliverableMode === "file" ? (
+            <>
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDelivIsDragging(true); }}
+                onDragLeave={() => setDelivIsDragging(false)}
+                onDrop={(e) => { e.preventDefault(); setDelivIsDragging(false); const d = Array.from(e.dataTransfer.files); if (d.length) addDeliverableFiles(d); }}
+                className={`cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-all ${delivIsDragging ? "border-purple-400 bg-purple-50" : "border-[rgba(0,0,0,0.12)] hover:border-[rgba(0,0,0,0.2)]"}`}
+              >
+                <FileText className="mx-auto mb-2 h-6 w-6 text-[#717182]" />
+                <p className="mb-1 text-[13px] text-[#030213]">Drop your final work here</p>
+                <p className="mb-3 text-[11px] text-[#717182]">PDF, DOCX, TXT, code files, or ZIP</p>
+                <label className="cursor-pointer">
+                  <span className="inline-flex items-center gap-2 rounded-md bg-[#030213] px-3 py-1.5 text-[12px] font-medium text-white hover:bg-[#1a1a2e]">
+                    <UploadIcon className="h-3.5 w-3.5" /> Choose files
+                  </span>
+                  <input type="file" accept=".txt,.pdf,.docx,.doc,.md,.py,.js,.ts,.jsx,.tsx,.html,.css,.java,.c,.cpp,.zip" multiple
+                    onChange={(e) => { const s = Array.from(e.target.files ?? []); if (s.length) addDeliverableFiles(s); e.target.value = ""; }} className="hidden" />
+                </label>
+              </div>
+              {deliverableFiles.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {deliverableFiles.map((f, i) => (
+                    <div key={`d-${f.name}-${i}`} className="flex items-center gap-3 rounded-lg border border-[rgba(0,0,0,0.08)] bg-[#F5F5F7] px-4 py-3">
+                      <FileText className="h-5 w-5 flex-shrink-0 text-purple-600" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-medium text-[#030213]">{f.name}</p>
+                        <p className="text-[11px] text-[#717182]">{(f.size / 1024 / 1024).toFixed(2)} MB</p>
+                      </div>
+                      {!isSubmitting && (
+                        <button onClick={() => setDeliverableFiles((p) => p.filter((_, j) => j !== i))} className="text-[#717182] hover:text-red-500">
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <textarea value={deliverablePastedText} onChange={(e) => setDeliverablePastedText(e.target.value)}
+                placeholder="Paste your final paper, essay, code, or whatever you submitted for the assignment."
+                disabled={isSubmitting} rows={8}
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+              <p className="mt-2 text-[11px] text-[#717182]">
+                {deliverablePastedText.length > 0 ? `${deliverablePastedText.length.toLocaleString()} characters` : "Paste the text of your final submission"}
               </p>
             </>
           )}
