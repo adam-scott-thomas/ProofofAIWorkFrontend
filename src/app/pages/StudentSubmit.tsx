@@ -104,6 +104,8 @@ export default function StudentSubmit() {
         const xhr = new XMLHttpRequest();
         xhr.open("PUT", presign.presigned_url);
         xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+        const token = localStorage.getItem("poaw-token");
+        if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) setProgress(Math.round(fileBase + (e.loaded / e.total) * fileRange));
         };
