@@ -33,7 +33,7 @@ export default function PublicProofPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["public-proof", slug],
     queryFn: async () => {
-      const res = await fetch(`/api/v1/p/${slug}`);
+      const res = await fetch(`/p/${slug}`);
       if (!res.ok) throw new Error("Proof page not found");
       return res.json();
     },
