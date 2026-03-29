@@ -201,10 +201,14 @@ export default function StudentSubmit() {
       setStep("creating");
       setProgress(96);
 
-      // Create assessment with all upload_ids (conversations + deliverables)
+      // Create assessment with conversation upload_ids only
+      // Deliverables are referenced in task_context for the evaluator but not parsed
+      const fullContext = delivIds.length > 0
+        ? taskContext + `\n[DELIVERABLE_UPLOAD_IDS: ${delivIds.join(",")}]`
+        : taskContext;
       const assessment = await apiPost<{ id: string; status: string }>("/assessments", {
-        upload_ids: [...convoIds, ...delivIds],
-        task_context: taskContext,
+        upload_ids: convoIds,
+        task_context: fullContext,
       });
 
       setProgress(100);
