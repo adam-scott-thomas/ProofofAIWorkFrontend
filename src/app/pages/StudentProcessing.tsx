@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router";
-import { Loader2, CheckCircle2, XCircle, User, Bot } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { apiFetch } from "../../lib/api";
+import { useParams, useNavigate, Link } from "react-router";
+import { Loader2, CheckCircle2, XCircle, User, Bot, RefreshCw, Clock } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiFetch, apiPost } from "../../lib/api";
+import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 
 type Status =
@@ -18,7 +19,7 @@ interface LiveObservation {
 }
 
 const STEP_LABELS: Record<string, string> = {
-  pending: "Queued",
+  pending: "Queued — waiting for a worker...",
   parsing: "Reading your conversation",
   normalizing: "Structuring the data",
   gating: "Checking what we can evaluate",
@@ -27,6 +28,8 @@ const STEP_LABELS: Record<string, string> = {
   complete: "Done!",
   partial: "Done!",
 };
+
+const STEP_ORDER: Status[] = ["pending", "parsing", "normalizing", "gating", "evaluating", "aggregating", "complete"];
 
 const DIMENSION_LABELS: Record<string, { label: string; desc: string; side: "you" | "ai" }> = {
   clarity: { label: "Clarity", desc: "How clearly you stated what you needed", side: "you" },
@@ -51,6 +54,7 @@ export default function StudentProcessing() {
   const navigate = useNavigate();
   const [observations, setObservations] = useState<LiveObservation[]>([]);
   const [newDims, setNewDims] = useState<Set<string>>(new Set());
+  const [elapsed, setElapsed] = useState(0);
 
   const { data: assessment } = useQuery({
     queryKey: ["assessment", id],
@@ -62,6 +66,16 @@ export default function StudentProcessing() {
       return 3000;
     },
   });
+
+  const rerunMutation = useMutation({
+    mutationFn: () => apiPost<any>(`/assessments/${id}/rerun`, {}),
+  });
+
+  // Elapsed timer
+  useEffect(() => {
+    const timer = setInterval(() => setElapsed((e) => e + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Poll live observations
   const poll = useCallback(async () => {
@@ -82,6 +96,8 @@ export default function StudentProcessing() {
   const status: Status = assessment?.status ?? "pending";
   const isEvaluating = ["evaluating", "aggregating"].includes(status);
   const isDone = status === "complete" || status === "partial";
+  const isProcessing = !isDone && status !== "failed";
+  const isStuck = status === "pending" && elapsed > 30;
 
   useEffect(() => {
     if (!isEvaluating && !isDone) return;
@@ -98,14 +114,32 @@ export default function StudentProcessing() {
     }
   }, [isDone, id, navigate]);
 
+  // Progress steps
+  const currentStepIdx = STEP_ORDER.indexOf(status);
+
   if (status === "failed") {
     return (
       <div className="py-12 text-center">
         <XCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
         <h1 className="mb-2 text-xl font-medium text-[#030213]">Evaluation failed</h1>
-        <p className="text-[14px] text-[#717182]">
+        <p className="mb-6 text-[14px] text-[#717182]">
           {assessment?.failure_reason || "Something went wrong. Please try uploading again."}
         </p>
+        <div className="flex justify-center gap-3">
+          <Button
+            onClick={() => rerunMutation.mutate()}
+            disabled={rerunMutation.isPending}
+          >
+            {rerunMutation.isPending ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Retrying...</>
+            ) : (
+              <><RefreshCw className="mr-2 h-4 w-4" /> Try again</>
+            )}
+          </Button>
+          <Link to="/student">
+            <Button variant="outline">Upload different file</Button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -130,16 +164,76 @@ export default function StudentProcessing() {
               {STEP_LABELS[status] || "Processing..."}
             </h1>
             <p className="mt-1 text-[13px] text-[#717182]">
-              This usually takes 30–60 seconds
+              {elapsed < 10 && "This usually takes 30–60 seconds"}
+              {elapsed >= 10 && elapsed < 60 && `${elapsed}s elapsed`}
+              {elapsed >= 60 && `${Math.floor(elapsed / 60)}m ${elapsed % 60}s elapsed`}
             </p>
           </>
         )}
       </div>
 
+      {/* Pipeline progress steps */}
+      {isProcessing && (
+        <Card className="mb-6 border border-[rgba(0,0,0,0.08)] bg-white shadow-sm">
+          <CardContent className="p-6">
+            <div className="space-y-2">
+              {STEP_ORDER.slice(0, -1).map((step, i) => {
+                const isActive = step === status;
+                const isComplete = i < currentStepIdx;
+                return (
+                  <div key={step} className="flex items-center gap-3">
+                    <div className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold ${
+                      isComplete ? "bg-emerald-100 text-emerald-700" :
+                      isActive ? "bg-blue-100 text-blue-700" :
+                      "bg-[#F5F5F7] text-[#717182]"
+                    }`}>
+                      {isComplete ? <CheckCircle2 className="h-3.5 w-3.5" /> :
+                       isActive ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> :
+                       i + 1}
+                    </div>
+                    <span className={`text-[13px] ${
+                      isActive ? "font-medium text-[#030213]" :
+                      isComplete ? "text-emerald-700" :
+                      "text-[#717182]"
+                    }`}>
+                      {STEP_LABELS[step]?.replace("...", "") || step}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Stuck warning */}
+      {isStuck && !rerunMutation.isPending && (
+        <Card className="mb-6 border border-amber-200 bg-amber-50 shadow-sm">
+          <CardContent className="p-5 flex items-start gap-3">
+            <Clock className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-[14px] font-medium text-amber-900">Taking longer than expected</p>
+              <p className="mt-1 text-[13px] text-amber-700">
+                The evaluation queue is busy. Your submission is in line and will be processed shortly.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-shrink-0 border-amber-300"
+              onClick={() => rerunMutation.mutate()}
+              disabled={rerunMutation.isPending}
+            >
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Dimension scores (appear during evaluation) */}
       {observations.length > 0 && (
         <div className="space-y-6">
-          {/* Your skills */}
           {yourDims.length > 0 && (
             <Card className="border border-[rgba(0,0,0,0.08)] bg-white shadow-sm">
               <CardContent className="p-6">
@@ -152,30 +246,18 @@ export default function StudentProcessing() {
                     const dim = DIMENSION_LABELS[obs.dimension];
                     const isNew = newDims.has(obs.dimension);
                     return (
-                      <div
-                        key={obs.dimension}
-                        className={`rounded-lg p-3 transition-all duration-700 ${
-                          isNew ? "bg-blue-50 ring-1 ring-blue-200" : "bg-[#FAFAFA]"
-                        }`}
-                      >
+                      <div key={obs.dimension} className={`rounded-lg p-3 transition-all duration-700 ${isNew ? "bg-blue-50 ring-1 ring-blue-200" : "bg-[#FAFAFA]"}`}>
                         <div className="mb-1.5 flex items-baseline justify-between">
-                          <span className="text-[13px] font-medium text-[#030213]">
-                            {dim?.label ?? obs.dimension}
-                          </span>
+                          <span className="text-[13px] font-medium text-[#030213]">{dim?.label ?? obs.dimension}</span>
                           {obs.score !== null && !obs.skipped && (
-                            <span className={`text-[13px] font-medium ${
-                              obs.score >= 0.7 ? "text-emerald-600" : obs.score >= 0.4 ? "text-amber-600" : "text-red-600"
-                            }`}>
+                            <span className={`text-[13px] font-medium ${obs.score >= 0.7 ? "text-emerald-600" : obs.score >= 0.4 ? "text-amber-600" : "text-red-600"}`}>
                               {Math.round(obs.score * 100)}%
                             </span>
                           )}
                         </div>
                         {obs.score !== null && !obs.skipped && (
                           <div className="h-1.5 overflow-hidden rounded-full bg-gray-200">
-                            <div
-                              className={`h-full rounded-full transition-all duration-1000 ${scoreColor(obs.score)}`}
-                              style={{ width: `${Math.round(obs.score * 100)}%` }}
-                            />
+                            <div className={`h-full rounded-full transition-all duration-1000 ${scoreColor(obs.score)}`} style={{ width: `${Math.round(obs.score * 100)}%` }} />
                           </div>
                         )}
                         <p className="mt-1 text-[11px] text-[#717182]">{dim?.desc}</p>
@@ -187,7 +269,6 @@ export default function StudentProcessing() {
             </Card>
           )}
 
-          {/* AI collaboration */}
           {aiDims.length > 0 && (
             <Card className="border border-[rgba(0,0,0,0.08)] bg-white shadow-sm">
               <CardContent className="p-6">
@@ -200,30 +281,18 @@ export default function StudentProcessing() {
                     const dim = DIMENSION_LABELS[obs.dimension];
                     const isNew = newDims.has(obs.dimension);
                     return (
-                      <div
-                        key={obs.dimension}
-                        className={`rounded-lg p-3 transition-all duration-700 ${
-                          isNew ? "bg-purple-50 ring-1 ring-purple-200" : "bg-[#FAFAFA]"
-                        }`}
-                      >
+                      <div key={obs.dimension} className={`rounded-lg p-3 transition-all duration-700 ${isNew ? "bg-purple-50 ring-1 ring-purple-200" : "bg-[#FAFAFA]"}`}>
                         <div className="mb-1.5 flex items-baseline justify-between">
-                          <span className="text-[13px] font-medium text-[#030213]">
-                            {dim?.label ?? obs.dimension}
-                          </span>
+                          <span className="text-[13px] font-medium text-[#030213]">{dim?.label ?? obs.dimension}</span>
                           {obs.score !== null && !obs.skipped && (
-                            <span className={`text-[13px] font-medium ${
-                              obs.score >= 0.7 ? "text-emerald-600" : obs.score >= 0.4 ? "text-amber-600" : "text-red-600"
-                            }`}>
+                            <span className={`text-[13px] font-medium ${obs.score >= 0.7 ? "text-emerald-600" : obs.score >= 0.4 ? "text-amber-600" : "text-red-600"}`}>
                               {Math.round(obs.score * 100)}%
                             </span>
                           )}
                         </div>
                         {obs.score !== null && !obs.skipped && (
                           <div className="h-1.5 overflow-hidden rounded-full bg-gray-200">
-                            <div
-                              className={`h-full rounded-full transition-all duration-1000 ${scoreColor(obs.score)}`}
-                              style={{ width: `${Math.round(obs.score * 100)}%` }}
-                            />
+                            <div className={`h-full rounded-full transition-all duration-1000 ${scoreColor(obs.score)}`} style={{ width: `${Math.round(obs.score * 100)}%` }} />
                           </div>
                         )}
                         <p className="mt-1 text-[11px] text-[#717182]">{dim?.desc}</p>
