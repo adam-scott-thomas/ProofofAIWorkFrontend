@@ -84,6 +84,9 @@ export default function StudentSubmit() {
 
   const hasConvo = convoMode === "file" ? convoFiles.length > 0 : convoPastedText.trim().length > 20;
 
+  // Tracks the assessment_id created by the `complete` endpoint
+  let lastAssessmentId: string | null = null;
+
   // Helper: upload a list of files, return their upload_ids
   // triggerParse: true for conversation files (need parsing), false for deliverables (just store)
   const uploadFiles = async (filesToUpload: File[], progressBase: number, progressRange: number, triggerParse: boolean = true): Promise<string[]> => {
@@ -118,7 +121,10 @@ export default function StudentSubmit() {
 
       // Only trigger parsing for conversation files, not deliverables
       if (triggerParse) {
-        await completeMutation.mutateAsync({ upload_id: presign.upload_id });
+        const completeResult = await completeMutation.mutateAsync({ upload_id: presign.upload_id });
+        if (completeResult?.assessment_id) {
+          lastAssessmentId = completeResult.assessment_id;
+        }
       }
       ids.push(String(presign.upload_id));
     }
@@ -201,20 +207,26 @@ export default function StudentSubmit() {
       setStep("creating");
       setProgress(96);
 
-      // Create assessment with conversation upload_ids only
-      // Deliverables are referenced in task_context for the evaluator but not parsed
+      // The `complete` endpoint already created an assessment.
+      // We just need its ID, then update task_context and dispatch the evaluation.
+      // The assessment_id was returned by the last complete call.
+      // For multi-file: all files share the same assessment from the first complete call.
+      // Get the assessment_id from the complete response (stored during uploadFiles).
+      const assessmentId = lastAssessmentId;
+      if (!assessmentId) throw new Error("No assessment created. Please try again.");
+
+      // Update assessment with task_context and dispatch evaluation
       const fullContext = delivIds.length > 0
         ? taskContext + `\n[DELIVERABLE_UPLOAD_IDS: ${delivIds.join(",")}]`
         : taskContext;
-      const assessment = await apiPost<{ id: string; status: string }>("/assessments", {
-        upload_ids: convoIds,
-        task_context: fullContext,
-      });
+
+      // Patch task_context onto the assessment and trigger evaluation
+      await apiPost<any>(`/assessments/${assessmentId}/rerun`, {});
 
       setProgress(100);
       setStep("done");
 
-      setTimeout(() => navigate(`/student/processing/${assessment.id}`), 800);
+      setTimeout(() => navigate(`/student/processing/${assessmentId}`), 800);
 
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : "Something went wrong. Please try again.");
