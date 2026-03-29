@@ -94,17 +94,27 @@ export default function StudentProcessing() {
   }, [id]);
 
   const status: Status = assessment?.status ?? "pending";
-  const isEvaluating = ["evaluating", "aggregating"].includes(status);
   const isDone = status === "complete" || status === "partial";
   const isProcessing = !isDone && status !== "failed";
   const isStuck = status === "pending" && elapsed > 120;
 
+  // Fake progress: advance steps on a timer so the UI feels alive
+  // Steps hold on "evaluating" until the real backend finishes
+  const STEP_TIMINGS = [0, 3, 7, 12, 18]; // seconds when each step "completes"
+  const fakeStepIdx = isDone
+    ? STEP_ORDER.length - 1
+    : Math.min(
+        STEP_TIMINGS.filter((t) => elapsed >= t).length,
+        STEP_ORDER.length - 2, // hold on last real step until done
+      );
+  const displayStatus = isDone ? "complete" : STEP_ORDER[Math.min(fakeStepIdx, STEP_ORDER.length - 1)];
+
   useEffect(() => {
-    if (!isEvaluating && !isDone) return;
+    if (!isProcessing && !isDone) return;
     poll();
     const interval = setInterval(poll, 2500);
     return () => clearInterval(interval);
-  }, [isEvaluating, isDone, poll]);
+  }, [isProcessing, isDone, poll]);
 
   // Redirect to results when done
   useEffect(() => {
@@ -113,9 +123,6 @@ export default function StudentProcessing() {
       return () => clearTimeout(timer);
     }
   }, [isDone, id, navigate]);
-
-  // Progress steps
-  const currentStepIdx = STEP_ORDER.indexOf(status);
 
   if (status === "failed") {
     const isParseFail = assessment?.failure_stage === "parse";
@@ -167,7 +174,7 @@ export default function StudentProcessing() {
           <>
             <Loader2 className="mx-auto mb-3 h-10 w-10 animate-spin text-blue-500" />
             <h1 className="text-xl font-medium text-[#030213]">
-              {STEP_LABELS[status] || "Processing..."}
+              {STEP_LABELS[displayStatus] || "Processing..."}
             </h1>
             <p className="mt-1 text-[13px] text-[#717182]">
               {elapsed < 10 && "This usually takes 30–60 seconds"}
@@ -184,8 +191,8 @@ export default function StudentProcessing() {
           <CardContent className="p-6">
             <div className="space-y-2">
               {STEP_ORDER.slice(0, -1).map((step, i) => {
-                const isActive = step === status;
-                const isComplete = i < currentStepIdx;
+                const isActive = i === fakeStepIdx;
+                const isComplete = i < fakeStepIdx;
                 return (
                   <div key={step} className="flex items-center gap-3">
                     <div className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold ${
