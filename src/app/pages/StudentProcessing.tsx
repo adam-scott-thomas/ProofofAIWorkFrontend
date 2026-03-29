@@ -97,7 +97,7 @@ export default function StudentProcessing() {
   const isEvaluating = ["evaluating", "aggregating"].includes(status);
   const isDone = status === "complete" || status === "partial";
   const isProcessing = !isDone && status !== "failed";
-  const isStuck = status === "pending" && elapsed > 30;
+  const isStuck = status === "pending" && elapsed > 120;
 
   useEffect(() => {
     if (!isEvaluating && !isDone) return;
