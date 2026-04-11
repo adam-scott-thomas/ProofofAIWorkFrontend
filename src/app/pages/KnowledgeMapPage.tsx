@@ -1,89 +1,28 @@
 import { KnowledgeMap } from "../components/KnowledgeMap";
-import { useState } from "react";
 import { useNavigate } from "react-router";
-
-// Mock data - global knowledge map across all conversations
-const mockGlobalKnowledgeMap = {
-  nodes: [
-    {
-      id: "conv_1",
-      title: "Mobile navigation redesign",
-      turnCount: 42,
-      type: "design" as const,
-      timestamp: "2026-03-26T09:30:00Z",
-    },
-    {
-      id: "conv_2",
-      title: "Event-driven architecture patterns",
-      turnCount: 38,
-      type: "design" as const,
-      timestamp: "2026-03-24T14:15:00Z",
-    },
-    {
-      id: "conv_3",
-      title: "PostgreSQL query optimization",
-      turnCount: 27,
-      type: "implementation" as const,
-      timestamp: "2026-03-23T11:00:00Z",
-    },
-    {
-      id: "conv_4",
-      title: "Design system token architecture",
-      turnCount: 31,
-      type: "design" as const,
-      timestamp: "2026-03-20T16:45:00Z",
-    },
-    {
-      id: "conv_5",
-      title: "Real-time analytics dashboard",
-      turnCount: 19,
-      type: "implementation" as const,
-      timestamp: "2026-03-18T10:20:00Z",
-    },
-    {
-      id: "conv_6",
-      title: "API documentation overhaul",
-      turnCount: 24,
-      type: "research" as const,
-      timestamp: "2026-03-15T14:30:00Z",
-    },
-    {
-      id: "conv_7",
-      title: "OAuth2 security implementation",
-      turnCount: 35,
-      type: "implementation" as const,
-      timestamp: "2026-03-22T09:00:00Z",
-    },
-    {
-      id: "conv_8",
-      title: "Session authentication bug fix",
-      turnCount: 18,
-      type: "debugging" as const,
-      timestamp: "2026-03-21T16:30:00Z",
-    },
-    {
-      id: "conv_9",
-      title: "Recommendation engine features",
-      turnCount: 29,
-      type: "research" as const,
-      timestamp: "2026-03-12T15:45:00Z",
-    },
-  ],
-  edges: [
-    { source: "conv_1", target: "conv_4", strength: 0.8, type: "reference" as const },
-    { source: "conv_2", target: "conv_7", strength: 0.9, type: "iteration" as const },
-    { source: "conv_7", target: "conv_8", strength: 0.95, type: "iteration" as const },
-    { source: "conv_3", target: "conv_5", strength: 0.7, type: "reference" as const },
-    { source: "conv_4", target: "conv_5", strength: 0.6, type: "reference" as const },
-    { source: "conv_6", target: "conv_2", strength: 0.5, type: "reference" as const },
-  ],
-};
+import { useProjects } from "../../hooks/useApi";
 
 export default function KnowledgeMapPage() {
   const navigate = useNavigate();
+  const { data: projectsData, isLoading } = useProjects();
 
   const handleNodeClick = (nodeId: string) => {
-    navigate(`/conversations/${nodeId}`);
+    navigate(`/app/conversations/${nodeId}`);
+  };
+
+  const projects: any[] = Array.isArray(projectsData)
+    ? projectsData
+    : projectsData?.items ?? projectsData?.data ?? [];
+
+  const knowledgeMapData = {
+    nodes: projects.map((p: any) => ({
+      id: p.id,
+      title: p.name ?? p.title ?? "Unnamed Project",
+      turnCount: p.conversation_count ?? p.conversations?.length ?? 0,
+      type: "implementation" as const,
+      timestamp: p.updated_at ?? p.created_at ?? new Date().toISOString(),
+    })),
+    edges: [] as { source: string; target: string; strength: number; type: "reference" | "iteration" }[],
   };
 
   return (
@@ -103,11 +42,24 @@ export default function KnowledgeMapPage() {
       </header>
 
       <div className="p-8">
-        <KnowledgeMap
-          projectId="global"
-          data={mockGlobalKnowledgeMap}
-          onNodeClick={handleNodeClick}
-        />
+        {isLoading ? (
+          <div className="flex items-center justify-center py-32 text-[13px] text-[#717182]">
+            Loading knowledge map...
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-32 text-center">
+            <p className="text-[15px] text-[#717182]">No projects yet.</p>
+            <p className="mt-2 text-[13px] text-[#717182]">
+              Upload conversations and run AI Sort to see your knowledge map.
+            </p>
+          </div>
+        ) : (
+          <KnowledgeMap
+            projectId="global"
+            data={knowledgeMapData}
+            onNodeClick={handleNodeClick}
+          />
+        )}
       </div>
     </div>
   );
