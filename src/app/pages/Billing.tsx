@@ -1,9 +1,26 @@
-import { useState } from "react";
-import { CreditCard, Crown, Zap, CheckCircle2, Loader2, Shield } from "lucide-react";
+import { useState, useEffect } from "react";
+import { CreditCard, Crown, Zap, CheckCircle2, Loader2, Shield, Bitcoin, ExternalLink } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
-import { useBilling, useSubscribe, useSetModelTier } from "../../hooks/useApi";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "../components/ui/dialog";
+import {
+  useBilling,
+  usePaymentConfig,
+  useSaveCard,
+  useSubscribe,
+  useSetModelTier,
+  useCreateCryptoInvoice,
+  useCryptoStatus,
+} from "../../hooks/useApi";
+import { useQueryClient } from "@tanstack/react-query";
+import SquarePaymentForm from "../components/SquarePaymentForm";
 
 const MODEL_TIERS = [
   { id: "free", label: "Standard", model: "GPT-4o Mini", desc: "Fast, good for most work", icon: Zap },
@@ -11,11 +28,56 @@ const MODEL_TIERS = [
   { id: "premium", label: "Premium", model: "OpenAI o3", desc: "Deep reasoning — maximum quality", icon: Crown },
 ] as const;
 
+type CardDialogMode = "save" | "subscribe" | null;
+type PaymentMethod = "card" | "crypto";
+
 export default function Billing() {
   const { data: billing, isLoading } = useBilling();
+  const { data: paymentConfig } = usePaymentConfig();
+  const saveCardMutation = useSaveCard();
   const subscribeMutation = useSubscribe();
   const setTierMutation = useSetModelTier();
+  const cryptoInvoiceMutation = useCreateCryptoInvoice();
+  const queryClient = useQueryClient();
+
+  const [cardDialogMode, setCardDialogMode] = useState<CardDialogMode>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [cryptoInvoiceId, setCryptoInvoiceId] = useState<string | null>(null);
+  const [cryptoInvoiceUrl, setCryptoInvoiceUrl] = useState<string | null>(null);
+
+  const { data: cryptoStatus } = useCryptoStatus(cryptoInvoiceId);
+
+  // Watch for crypto payment completion
+  useEffect(() => {
+    if (!cryptoInvoiceId || !cryptoStatus) return;
+    if (cryptoStatus.local_status === "completed" || cryptoStatus.np_status === "finished" || cryptoStatus.np_status === "confirmed") {
+      queryClient.invalidateQueries({ queryKey: ["billing"] });
+      setCardDialogMode(null);
+      setCryptoInvoiceId(null);
+      setCryptoInvoiceUrl(null);
+      setSuccessMsg("Crypto payment confirmed! Feature activated.");
+    }
+  }, [cryptoStatus, cryptoInvoiceId, queryClient]);
+
+  // Poll crypto status every 10s while waiting
+  useEffect(() => {
+    if (!cryptoInvoiceId) return;
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ["crypto-status", cryptoInvoiceId] });
+    }, 10_000);
+    return () => clearInterval(interval);
+  }, [cryptoInvoiceId, queryClient]);
+
+  // Check URL params for crypto return
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("crypto") === "success") {
+      setSuccessMsg("Crypto payment submitted! It may take a few minutes to confirm.");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   if (isLoading) {
     return (
@@ -33,6 +95,50 @@ export default function Billing() {
   const prices = billing?.prices ?? {};
   const isFreeMode = flags.billing_mode === "free";
 
+  const handleCardToken = async (sourceId: string) => {
+    setSuccessMsg(null);
+
+    if (cardDialogMode === "subscribe") {
+      subscribeMutation.mutate(
+        { source_id: sourceId },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["billing"] });
+            setCardDialogMode(null);
+            setSuccessMsg("Subscribed to Pro! All features unlocked.");
+          },
+        },
+      );
+    } else {
+      saveCardMutation.mutate(
+        { source_id: sourceId },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["billing"] });
+            setCardDialogMode(null);
+            setSuccessMsg("Card saved successfully.");
+          },
+        },
+      );
+    }
+  };
+
+  const handleCryptoSubscribe = () => {
+    setSuccessMsg(null);
+    cryptoInvoiceMutation.mutate(
+      { feature: "subscription" },
+      {
+        onSuccess: (data) => {
+          setCryptoInvoiceId(data.invoice_id);
+          setCryptoInvoiceUrl(data.invoice_url);
+        },
+      },
+    );
+  };
+
+  const mutationPending = saveCardMutation.isPending || subscribeMutation.isPending;
+  const mutationError = saveCardMutation.error || subscribeMutation.error;
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-[rgba(0,0,0,0.08)] bg-white">
@@ -43,6 +149,14 @@ export default function Billing() {
       </header>
 
       <div className="mx-auto max-w-4xl p-8 space-y-6">
+        {/* Success message */}
+        {successMsg && (
+          <div className="flex items-center gap-2 rounded-md bg-emerald-50 px-4 py-3 text-[13px] text-emerald-700 border border-emerald-200">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            {successMsg}
+          </div>
+        )}
+
         {/* Current plan */}
         <Card className="border border-[rgba(0,0,0,0.08)] bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
@@ -63,12 +177,7 @@ export default function Billing() {
               )}
             </div>
             {!subActive && !isFreeMode && (
-              <Button
-                onClick={() => {
-                  // For now, show a message — Square Web Payments SDK integration needed for card collection
-                  alert("Subscription requires card setup. Coming soon.");
-                }}
-              >
+              <Button onClick={() => setCardDialogMode("subscribe")}>
                 <Crown className="mr-2 h-4 w-4" />
                 Upgrade to Pro — ${((prices.subscription ?? 0) / 100).toFixed(2)}/mo
               </Button>
@@ -88,7 +197,7 @@ export default function Billing() {
                 </p>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={() => alert("Card setup coming soon — Square Web Payments SDK")}>
+            <Button variant="outline" size="sm" onClick={() => setCardDialogMode("save")}>
               {hasCard ? "Update card" : "Add card"}
             </Button>
           </div>
@@ -111,7 +220,7 @@ export default function Billing() {
                   key={tier.id}
                   onClick={() => {
                     if (needsSub) {
-                      alert("Upgrade to Pro to use this model tier");
+                      setCardDialogMode("subscribe");
                       return;
                     }
                     setSelectedTier(tier.id);
@@ -183,6 +292,162 @@ export default function Billing() {
           </Card>
         )}
       </div>
+
+      {/* Payment dialog — Card or Crypto */}
+      <Dialog
+        open={cardDialogMode !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCardDialogMode(null);
+            setPaymentMethod("card");
+            setCryptoInvoiceId(null);
+            setCryptoInvoiceUrl(null);
+          }
+        }}
+      >
+        <DialogContent className="bg-white">
+          <DialogHeader>
+            <DialogTitle>
+              {cardDialogMode === "subscribe" ? "Subscribe to Pro" : hasCard ? "Update Payment Method" : "Add Payment Method"}
+            </DialogTitle>
+            <DialogDescription>
+              {cardDialogMode === "subscribe"
+                ? `$${((prices.subscription ?? 0) / 100).toFixed(2)}/month — unlocks all features and premium models.`
+                : "Your card is securely tokenized by Square. We never see your full card number."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Payment method tabs — only show for subscribe */}
+          {cardDialogMode === "subscribe" && (
+            <div className="flex gap-2 border-b border-[rgba(0,0,0,0.08)] pb-3">
+              <button
+                onClick={() => setPaymentMethod("card")}
+                className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] transition-colors ${
+                  paymentMethod === "card"
+                    ? "bg-[#030213] text-white"
+                    : "bg-gray-100 text-[#717182] hover:bg-gray-200"
+                }`}
+              >
+                <CreditCard className="h-3.5 w-3.5" />
+                Card
+              </button>
+              <button
+                onClick={() => setPaymentMethod("crypto")}
+                className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] transition-colors ${
+                  paymentMethod === "crypto"
+                    ? "bg-[#030213] text-white"
+                    : "bg-gray-100 text-[#717182] hover:bg-gray-200"
+                }`}
+              >
+                <Bitcoin className="h-3.5 w-3.5" />
+                Crypto
+              </button>
+            </div>
+          )}
+
+          {mutationError && (
+            <div className="rounded-md bg-red-50 px-3 py-2 text-[13px] text-red-700">
+              {(mutationError as Error).message}
+            </div>
+          )}
+
+          {cryptoInvoiceMutation.error && (
+            <div className="rounded-md bg-red-50 px-3 py-2 text-[13px] text-red-700">
+              {(cryptoInvoiceMutation.error as Error).message}
+            </div>
+          )}
+
+          {/* Card payment form */}
+          {paymentMethod === "card" && (
+            <>
+              {paymentConfig?.app_id && paymentConfig?.location_id ? (
+                <SquarePaymentForm
+                  appId={paymentConfig.app_id}
+                  locationId={paymentConfig.location_id}
+                  onToken={handleCardToken}
+                  onCancel={() => setCardDialogMode(null)}
+                  submitLabel={cardDialogMode === "subscribe" ? `Subscribe — $${((prices.subscription ?? 0) / 100).toFixed(2)}/mo` : "Save Card"}
+                  loading={mutationPending}
+                />
+              ) : (
+                <div className="flex items-center gap-2 text-[13px] text-[#717182]">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Loading payment configuration...
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Crypto payment flow */}
+          {paymentMethod === "crypto" && (
+            <div className="space-y-4">
+              {!cryptoInvoiceUrl ? (
+                <>
+                  <p className="text-[13px] text-[#717182]">
+                    Pay with 300+ cryptocurrencies via NowPayments. You'll be redirected to complete the payment.
+                  </p>
+                  <div className="flex gap-3 justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCardDialogMode(null)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleCryptoSubscribe}
+                      disabled={cryptoInvoiceMutation.isPending}
+                    >
+                      {cryptoInvoiceMutation.isPending && (
+                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      )}
+                      <Bitcoin className="mr-2 h-3.5 w-3.5" />
+                      Pay with Crypto — ${((prices.subscription ?? 0) / 100).toFixed(2)}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-3">
+                  <div className="rounded-md bg-amber-50 border border-amber-200 px-4 py-3">
+                    <p className="text-[13px] text-amber-800 font-medium mb-1">Invoice created</p>
+                    <p className="text-[12px] text-amber-700">
+                      Complete your payment in the NowPayments window. This page will update automatically when confirmed.
+                    </p>
+                  </div>
+
+                  {cryptoStatus && (
+                    <div className="flex items-center gap-2 text-[13px] text-[#717182]">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Status: {cryptoStatus.np_status || cryptoStatus.local_status || "waiting"}
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCryptoInvoiceId(null);
+                        setCryptoInvoiceUrl(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => window.open(cryptoInvoiceUrl, "_blank")}
+                    >
+                      <ExternalLink className="mr-2 h-3.5 w-3.5" />
+                      Open Payment Page
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
