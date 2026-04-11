@@ -46,13 +46,13 @@ export default function Dashboard() {
 
   // Derive counts — API may return arrays or paginated objects
   const projects = Array.isArray(projectsData) ? projectsData : (projectsData?.items ?? projectsData?.projects ?? []);
-  const conversations = Array.isArray(conversationsData) ? conversationsData : (conversationsData?.items ?? conversationsData?.conversations ?? []);
+  const conversations = Array.isArray(conversationsData) ? conversationsData : (conversationsData?.conversations ?? conversationsData?.items ?? []);
   const assessments = Array.isArray(assessmentsData) ? assessmentsData : (assessmentsData?.items ?? assessmentsData?.assessments ?? []);
   const proofPages = Array.isArray(proofPagesData) ? proofPagesData : (proofPagesData?.items ?? proofPagesData?.proof_pages ?? []);
   const activityItems = Array.isArray(activityData) ? activityData : (activityData?.items ?? activityData?.activity ?? []);
 
   const projectCount = projects?.length ?? 0;
-  const conversationCount = conversations?.length ?? 0;
+  const conversationCount = conversationsData?.total ?? conversations?.length ?? 0;
   const assessmentCount = assessments?.length ?? 0;
   const publishedProofCount = proofPages?.filter((p: any) => p.published || p.status === "published")?.length ?? 0;
 
@@ -80,8 +80,8 @@ export default function Dashboard() {
     date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
   };
 
-  // Loading state — show while core data is fetching
-  const isLoading = userLoading || projectsLoading || conversationsLoading || wpLoading;
+  // Loading state — only block on projects + work profile (the core display data)
+  const isLoading = projectsLoading || wpLoading;
 
   if (isLoading) {
     return (
@@ -102,9 +102,11 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl tracking-tight">Dashboard</h1>
-              <p className="mt-1 text-[15px] leading-relaxed text-[#3A3A3A] max-w-3xl">
-                You get results. But not consistently. You rely on iteration instead of structure — which is costing you efficiency.
-              </p>
+              {userName !== "—" && (
+                <p className="mt-1 text-[15px] leading-relaxed text-[#717182]">
+                  {userName} {userHandle !== "—" ? `(${userHandle})` : ""}
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <Button variant="outline" size="sm">
@@ -121,18 +123,17 @@ export default function Dashboard() {
       </header>
 
       <div className="p-8">
-        {/* Hero - Always visible */}
-        <div className="mb-12 max-w-4xl">
-          <h2 className="mb-4 text-4xl tracking-tight leading-tight">
-            You get results.
-          </h2>
-          <h2 className="mb-4 text-4xl tracking-tight leading-tight text-[#717182]">
-            But not consistently.
-          </h2>
-          <p className="text-xl text-[#717182] leading-relaxed">
-            You rely on iteration instead of structure — and it's slowing you down.
-          </p>
-        </div>
+        {/* Hero - shown only before AI Sort */}
+        {!hasAISorted && (
+          <div className="mb-12 max-w-4xl">
+            <h2 className="mb-4 text-4xl tracking-tight leading-tight">
+              Upload your AI conversations.
+            </h2>
+            <h2 className="mb-4 text-4xl tracking-tight leading-tight text-[#717182]">
+              See what they prove.
+            </h2>
+          </div>
+        )}
 
         {/* AI Sort CTA or Status */}
         {!hasAISorted ? (
@@ -177,7 +178,12 @@ export default function Dashboard() {
                 <div className="flex items-center gap-4">
                   <div className="text-6xl tracking-tight font-medium">
                     {workProfile?.archetype?.primary
-                      ? `${String(workProfile.archetype.primary).toUpperCase()}${workProfile.archetype.secondary ? `–${String(workProfile.archetype.secondary).toUpperCase()}` : ""}`
+                      ? `${String(workProfile.archetype.primary).toUpperCase()}${
+                          workProfile.archetype.secondary
+                            ? `–${Array.isArray(workProfile.archetype.secondary)
+                                ? String(workProfile.archetype.secondary[0] || "").toUpperCase()
+                                : String(workProfile.archetype.secondary).toUpperCase()}`
+                            : ""}`
                       : "ANALYZING"}
                   </div>
                   <Button
@@ -191,15 +197,16 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* One-block assessment */}
-              <div className="border-l-4 border-[rgba(0,0,0,0.08)] pl-6">
-                <p className="mb-4 text-xl leading-relaxed text-[#3A3A3A]">
-                  You control direction and get outcomes.
-                </p>
-                <p className="text-xl leading-relaxed text-[#717182]">
-                  {workProfile?.narrative ?? "But you don't define constraints early — so you waste cycles fixing things later."}
-                </p>
-              </div>
+              {/* Narrative from work profile */}
+              {workProfile?.narrative && (
+                <div className="border-l-4 border-[rgba(0,0,0,0.08)] pl-6">
+                  <p className="text-xl leading-relaxed text-[#717182]">
+                    {typeof workProfile.narrative === "string" && workProfile.narrative.length > 200
+                      ? workProfile.narrative.slice(0, 200) + "..."
+                      : workProfile.narrative}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Status banner */}
