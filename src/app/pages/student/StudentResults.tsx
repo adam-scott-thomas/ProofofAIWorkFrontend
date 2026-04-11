@@ -2,13 +2,15 @@ import { Share2, Download, Twitter, Linkedin, Link as LinkIcon, Check, Loader2 }
 import { Button } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
 import { useState } from "react";
-import { useSearchParams } from "react-router";
+import { useSearchParams, useNavigate } from "react-router";
+import { toast } from "sonner";
 import { useAssessmentResults } from "../../../hooks/useApi";
 
 export default function StudentResults() {
   const [copied, setCopied] = useState(false);
   const [searchParams] = useSearchParams();
   const assessmentId = searchParams.get("id") || "";
+  const navigate = useNavigate();
 
   const { data: resultsData, isLoading, isError } = useAssessmentResults(assessmentId);
 
@@ -255,7 +257,7 @@ export default function StudentResults() {
               <Linkedin className="h-4 w-4" />
               LinkedIn
             </Button>
-            <Button variant="outline" className="flex-1 gap-2">
+            <Button variant="outline" className="flex-1 gap-2" onClick={() => toast.info("Download coming soon")}>
               <Download className="h-4 w-4" />
               Download
             </Button>
@@ -267,7 +269,7 @@ export default function StudentResults() {
           <p className="mb-4 text-[13px] text-[#717182]">
             Want deeper insights and AI-organized project views?
           </p>
-          <Button variant="outline" size="lg">
+          <Button variant="outline" size="lg" onClick={() => navigate("/sign-in")}>
             Upgrade to Full Platform
           </Button>
         </div>
