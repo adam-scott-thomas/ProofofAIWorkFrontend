@@ -134,6 +134,12 @@ export const useTriggerEvaluation = () =>
   });
 
 // Billing
+export const usePaymentConfig = () =>
+  useAuthQuery<{ app_id: string; location_id: string }>(
+    ["payment-config"],
+    () => apiFetch<{ app_id: string; location_id: string }>("/payments/config"),
+  );
+
 export const useBilling = () =>
   useAuthQuery(["billing"], () => apiFetch<any>("/payments/billing"));
 
@@ -153,3 +159,14 @@ export const useSetModelTier = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["billing"] }),
   });
 };
+
+// Crypto (NowPayments)
+export const useCreateCryptoInvoice = () =>
+  useMutation({ mutationFn: (body: { feature: string }) => apiPost<any>("/payments/crypto-invoice", body) });
+
+export const useCryptoStatus = (invoiceId: string | null) =>
+  useAuthQuery(
+    ["crypto-status", invoiceId],
+    () => apiFetch<any>(`/payments/crypto-status/${invoiceId}`),
+    { enabled: !!invoiceId },
+  );
