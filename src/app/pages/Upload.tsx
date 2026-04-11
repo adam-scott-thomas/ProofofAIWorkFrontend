@@ -133,7 +133,7 @@ export default function Upload() {
       setStep("done");
 
       // Navigate to processing page
-      setTimeout(() => navigate(`/dashboard/assessment/${complete.assessment_id}/processing`), 800);
+      setTimeout(() => navigate(`/app/assessment/${complete.assessment_id}/processing`), 800);
 
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : "Something went wrong. Please try again.");
@@ -150,7 +150,7 @@ export default function Upload() {
       <header className="border-b border-[rgba(0,0,0,0.08)] bg-white">
         <div className="px-8 py-6">
           <Link
-            to="/dashboard/upload"
+            to="/app/upload"
             className="mb-3 inline-flex items-center gap-2 text-[13px] text-[#717182] hover:text-[#030213] transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
