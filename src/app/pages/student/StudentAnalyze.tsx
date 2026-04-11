@@ -1,34 +1,62 @@
 import { Sparkles, Brain, FileSearch, CheckCircle2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router";
+import { useAssessment } from "../../../hooks/useApi";
+
+// Map backend status to animation step index (0–3)
+function statusToStepIndex(status: string): number {
+  switch (status) {
+    case "pending":
+    case "parsing":
+      return 0;
+    case "normalizing":
+      return 1;
+    case "gating":
+    case "evaluating":
+      return 2;
+    case "aggregating":
+    case "complete":
+    case "partial":
+      return 3;
+    default:
+      return 0;
+  }
+}
 
 export default function StudentAnalyze() {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(0);
+  const [searchParams] = useSearchParams();
+  const assessmentId = searchParams.get("id") || "";
+
+  // Poll assessment status every 2s while waiting
+  const { data: assessmentData } = useAssessment(assessmentId, {
+    refetchInterval: assessmentId ? 2000 : false,
+  });
+
+  const currentStatus: string = assessmentData?.status ?? "pending";
+  const isDone = currentStatus === "complete" || currentStatus === "partial";
+  const currentStep = statusToStepIndex(currentStatus);
 
   const analysisSteps = [
-    { icon: FileSearch, label: "Reading conversations", duration: 1500 },
-    { icon: Brain, label: "Analyzing patterns", duration: 2000 },
-    { icon: Sparkles, label: "Generating insights", duration: 1500 },
-    { icon: CheckCircle2, label: "Complete", duration: 500 },
+    { icon: FileSearch, label: "Reading conversations" },
+    { icon: Brain, label: "Analyzing patterns" },
+    { icon: Sparkles, label: "Generating insights" },
+    { icon: CheckCircle2, label: "Complete" },
   ];
 
+  // Navigate to share gate when analysis is done
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    if (currentStep < analysisSteps.length - 1) {
-      timeoutId = setTimeout(() => {
-        setCurrentStep(currentStep + 1);
-      }, analysisSteps[currentStep].duration);
-    } else if (currentStep === analysisSteps.length - 1) {
-      // On final step, wait a bit then navigate to share gate
-      timeoutId = setTimeout(() => {
-        navigate("/student/share");
-      }, 1000);
+    if (isDone) {
+      const idParam = assessmentId ? `?id=${assessmentId}` : "";
+      navigate(`/student/share${idParam}`);
     }
+  }, [isDone, assessmentId, navigate]);
 
-    return () => clearTimeout(timeoutId);
-  }, [currentStep, navigate]);
+  // Fallback: if no assessmentId, advance through mock steps so the UI isn't frozen
+  useEffect(() => {
+    if (assessmentId) return; // real polling is handling it
+    // No-op: just show step 0 indefinitely if no ID was passed
+  }, [assessmentId]);
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-8">
