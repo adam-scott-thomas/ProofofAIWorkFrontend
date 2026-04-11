@@ -1,9 +1,10 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Sparkles, CreditCard, Lock } from "lucide-react";
+import { Sparkles, Lock, CreditCard, Bitcoin, ExternalLink, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
+import { usePaymentConfig } from "../../hooks/useApi";
+import { apiPost } from "../../lib/api";
+import SquarePaymentForm from "./SquarePaymentForm";
 
 interface PaymentModalProps {
   open: boolean;
@@ -11,26 +12,61 @@ interface PaymentModalProps {
   onComplete: () => void;
 }
 
-export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalProps) {
-  const [isProcessing, setIsProcessing] = useState(false);
+type PaymentTab = "card" | "crypto";
 
-  const handlePayment = () => {
-    setIsProcessing(true);
-    // Simulate payment processing
-    setTimeout(() => {
-      setIsProcessing(false);
+export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalProps) {
+  const { data: paymentConfig } = usePaymentConfig();
+
+  const [tab, setTab] = useState<PaymentTab>("card");
+  const [cardLoading, setCardLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cryptoLoading, setCryptoLoading] = useState(false);
+  const [cryptoInvoiceUrl, setCryptoInvoiceUrl] = useState<string | null>(null);
+
+  const handleClose = (open: boolean) => {
+    if (!open) {
+      setTab("card");
+      setError(null);
+      setCryptoInvoiceUrl(null);
+    }
+    onOpenChange(open);
+  };
+
+  const handleCardToken = async (sourceId: string) => {
+    setError(null);
+    setCardLoading(true);
+    try {
+      await apiPost("/payments/ai-sort", { source_id: sourceId });
       onOpenChange(false);
       onComplete();
-    }, 1500);
+    } catch (e: any) {
+      setError(e.message || "Payment failed. Please try again.");
+    } finally {
+      setCardLoading(false);
+    }
+  };
+
+  const handleCryptoPay = async () => {
+    setError(null);
+    setCryptoLoading(true);
+    try {
+      const res = await apiPost<{ invoice_url: string }>("/payments/crypto-invoice", { feature: "ai_sort" });
+      setCryptoInvoiceUrl(res.invoice_url);
+      window.open(res.invoice_url, "_blank");
+    } catch (e: any) {
+      setError(e.message || "Could not create crypto invoice. Please try again.");
+    } finally {
+      setCryptoLoading(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Sparkles className="h-5 w-5" />
-            Run AI Sort — $7
+            Run AI Sort
           </DialogTitle>
           <DialogDescription>
             Preview your results and complete payment to unlock AI-organized work
@@ -75,75 +111,130 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
             </div>
           </div>
 
-          {/* Payment form */}
-          <div className="space-y-4 border-t border-[rgba(0,0,0,0.06)] pt-6">
-            <div className="flex items-center gap-2 text-[13px] text-[#717182]">
-              <Lock className="h-3.5 w-3.5" />
-              <span>Secure payment powered by Stripe</span>
+          {/* Payment section */}
+          <div className="border-t border-[rgba(0,0,0,0.06)] pt-6 space-y-4">
+            {/* Payment method tabs */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setTab("card"); setError(null); }}
+                className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] transition-colors ${
+                  tab === "card"
+                    ? "bg-[#030213] text-white"
+                    : "bg-gray-100 text-[#717182] hover:bg-gray-200"
+                }`}
+              >
+                <CreditCard className="h-3.5 w-3.5" />
+                Card — $7
+              </button>
+              <button
+                onClick={() => { setTab("crypto"); setError(null); }}
+                className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] transition-colors ${
+                  tab === "crypto"
+                    ? "bg-[#030213] text-white"
+                    : "bg-gray-100 text-[#717182] hover:bg-gray-200"
+                }`}
+              >
+                <Bitcoin className="h-3.5 w-3.5" />
+                Crypto — $5.90
+              </button>
             </div>
 
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="card-number" className="text-[13px]">
-                  Card number
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="card-number"
-                    placeholder="4242 4242 4242 4242"
-                    className="pr-10"
+            {/* Error display */}
+            {error && (
+              <div className="flex items-center gap-2 rounded-md bg-red-50 px-3 py-2 text-[13px] text-red-700">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {error}
+              </div>
+            )}
+
+            {/* Card tab */}
+            {tab === "card" && (
+              <>
+                <div className="flex items-center gap-2 text-[13px] text-[#717182]">
+                  <Lock className="h-3.5 w-3.5" />
+                  <span>Secure payment powered by Square</span>
+                </div>
+
+                {paymentConfig?.app_id && paymentConfig?.location_id ? (
+                  <SquarePaymentForm
+                    appId={paymentConfig.app_id}
+                    locationId={paymentConfig.location_id}
+                    onToken={handleCardToken}
+                    onCancel={() => onOpenChange(false)}
+                    submitLabel="Pay $7"
+                    loading={cardLoading}
                   />
-                  <CreditCard className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#717182]" />
-                </div>
-              </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-[13px] text-[#717182]">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Loading payment configuration...
+                  </div>
+                )}
+              </>
+            )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="expiry" className="text-[13px]">
-                    Expiry
-                  </Label>
-                  <Input id="expiry" placeholder="MM / YY" />
-                </div>
-                <div>
-                  <Label htmlFor="cvc" className="text-[13px]">
-                    CVC
-                  </Label>
-                  <Input id="cvc" placeholder="123" maxLength={3} />
-                </div>
+            {/* Crypto tab */}
+            {tab === "crypto" && (
+              <div className="space-y-4">
+                {!cryptoInvoiceUrl ? (
+                  <>
+                    <p className="text-[13px] text-[#717182]">
+                      Pay with 300+ cryptocurrencies via NowPayments. You'll be redirected to a secure payment page.
+                    </p>
+                    <div className="flex gap-3 justify-end">
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => onOpenChange(false)}
+                        disabled={cryptoLoading}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        className="flex-1"
+                        onClick={handleCryptoPay}
+                        disabled={cryptoLoading}
+                      >
+                        {cryptoLoading && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
+                        <Bitcoin className="mr-2 h-3.5 w-3.5" />
+                        Pay with Crypto — $5.90
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="rounded-md bg-amber-50 border border-amber-200 px-4 py-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CheckCircle2 className="h-4 w-4 text-amber-700" />
+                        <p className="text-[13px] text-amber-800 font-medium">Invoice created</p>
+                      </div>
+                      <p className="text-[12px] text-amber-700">
+                        Complete your payment in the NowPayments window. Your access will be activated once confirmed.
+                      </p>
+                    </div>
+                    <div className="flex gap-3 justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCryptoInvoiceUrl(null);
+                          setError(null);
+                        }}
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => window.open(cryptoInvoiceUrl, "_blank")}
+                      >
+                        <ExternalLink className="mr-2 h-3.5 w-3.5" />
+                        Open Payment Page
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
-
-              <div>
-                <Label htmlFor="name" className="text-[13px]">
-                  Cardholder name
-                </Label>
-                <Input id="name" placeholder="Alex Chen" />
-              </div>
-            </div>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex gap-3 border-t border-[rgba(0,0,0,0.06)] pt-6">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => onOpenChange(false)}
-              disabled={isProcessing}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="flex-1"
-              onClick={handlePayment}
-              disabled={isProcessing}
-            >
-              {isProcessing ? (
-                <>Processing...</>
-              ) : (
-                <>
-                  Pay $7
-                </>
-              )}
-            </Button>
+            )}
           </div>
         </div>
       </DialogContent>
