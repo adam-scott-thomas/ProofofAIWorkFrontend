@@ -5,6 +5,7 @@ import { Card } from "../components/ui/card";
 import { useState } from "react";
 import { ShareDialog } from "../components/ShareDialog";
 import { useWorkProfile } from "../../hooks/useApi";
+import { toast } from "sonner";
 
 function DimensionBar({ label, value }: { label: string; value: number }) {
   return (
@@ -91,7 +92,7 @@ export default function WorkProfile() {
                 <Share2 className="mr-2 h-4 w-4" />
                 Share Profile
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={() => toast.info("Export coming soon")}>
                 <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>
