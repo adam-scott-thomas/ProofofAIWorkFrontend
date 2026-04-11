@@ -4,47 +4,18 @@ import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Link } from "react-router";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ShareDialog } from "../components/ShareDialog";
 import { PaymentModal } from "../components/PaymentModal";
-
-// Mock data based on API endpoints
-const mockUser = {
-  name: "Alex Chen",
-  email: "alex@example.com",
-  handle: "@alexchen",
-};
-
-const mockWorkProfile = {
-  human_leadership_score: 87,
-  ai_execution_load: 0.68,
-  cai: 4.37,
-  confidence: "high" as const,
-  archetype: {
-    primary: "Architect",
-    secondary: "Explorer",
-  },
-  narrative: "You maintain strong strategic control while effectively delegating execution to AI. Your work demonstrates sophisticated architectural thinking with systematic cognitive amplification through AI collaboration.",
-};
-
-const mockStats = {
-  conversations: 127,
-  projects: 8,
-  assessments: 3,
-  publishedProofs: 5,
-  disputes: 2,
-  webhooks: 1,
-};
-
-const aiSortedProjects = 8;
-const verifiedAssessments = 3;
-
-const mockActivity = [
-  { id: 1, action: "Assessment completed", detail: "Q1 2026 Product Work", timestamp: "2026-03-27T09:15:00Z" },
-  { id: 2, action: "Project confirmed", detail: "Mobile App Redesign", timestamp: "2026-03-26T16:42:00Z" },
-  { id: 3, action: "Conversations uploaded", detail: "14 new conversations parsed", timestamp: "2026-03-25T11:20:00Z" },
-  { id: 4, action: "Proof page published", detail: "Backend Architecture Migration", timestamp: "2026-03-24T14:05:00Z" },
-  { id: 5, action: "Project created", detail: "Data Pipeline Optimization", timestamp: "2026-03-23T10:18:00Z" },
-];
+import {
+  useCurrentUser,
+  useWorkProfile,
+  useActivity,
+  useProjects,
+  useConversations,
+  useAssessments,
+  useProofPages,
+} from "../../hooks/useApi";
 
 function formatRelativeTime(isoString: string) {
   const date = new Date(isoString);
@@ -62,18 +33,66 @@ function formatRelativeTime(isoString: string) {
 export default function Dashboard() {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [hasAISorted, setHasAISorted] = useState(false);
+  const queryClient = useQueryClient();
 
+  // Real API data
+  const { data: user, isLoading: userLoading } = useCurrentUser();
+  const { data: workProfile, isLoading: wpLoading } = useWorkProfile();
+  const { data: projectsData, isLoading: projectsLoading } = useProjects();
+  const { data: conversationsData, isLoading: conversationsLoading } = useConversations();
+  const { data: assessmentsData } = useAssessments();
+  const { data: proofPagesData } = useProofPages();
+  const { data: activityData, isLoading: activityLoading } = useActivity();
+
+  // Derive counts — API may return arrays or paginated objects
+  const projects = Array.isArray(projectsData) ? projectsData : (projectsData?.items ?? projectsData?.projects ?? []);
+  const conversations = Array.isArray(conversationsData) ? conversationsData : (conversationsData?.items ?? conversationsData?.conversations ?? []);
+  const assessments = Array.isArray(assessmentsData) ? assessmentsData : (assessmentsData?.items ?? assessmentsData?.assessments ?? []);
+  const proofPages = Array.isArray(proofPagesData) ? proofPagesData : (proofPagesData?.items ?? proofPagesData?.proof_pages ?? []);
+  const activityItems = Array.isArray(activityData) ? activityData : (activityData?.items ?? activityData?.activity ?? []);
+
+  const projectCount = projects?.length ?? 0;
+  const conversationCount = conversations?.length ?? 0;
+  const assessmentCount = assessments?.length ?? 0;
+  const publishedProofCount = proofPages?.filter((p: any) => p.published || p.status === "published")?.length ?? 0;
+
+  // "Has AI Sorted" = user has at least one project
+  const hasAISorted = projectCount > 0;
+
+  // Work profile scores with safe defaults
+  const hlsScore = workProfile?.human_leadership_score ?? 0;
+  const aelScore = workProfile?.ai_execution_load ?? 0;
+  const caiScore = workProfile?.cai ?? 0;
+
+  // User info with fallbacks
+  const userName = user?.name ?? user?.display_name ?? "—";
+  const userHandle = user?.handle ? `@${user.handle.replace(/^@/, "")}` : (user?.email ? `@${user.email.split("@")[0]}` : "—");
+
+  // ShareDialog data built from real data
   const shareData = {
-    name: "Alex Chen",
-    handle: "@alexchen",
-    hlsScore: 87,
-    aelScore: 68,
-    caiScore: 4.37,
-    proofUrl: "https://proofofaiwork.com/p/alexchen-q1-2026",
-    conversationCount: 127,
-    date: "Mar 27, 2026",
+    name: userName,
+    handle: userHandle,
+    hlsScore: hlsScore,
+    aelScore: Math.round(aelScore * 100),
+    caiScore: caiScore,
+    proofUrl: `https://proofofaiwork.com/p/${userHandle.replace(/^@/, "")}-proof`,
+    conversationCount: conversationCount,
+    date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
   };
+
+  // Loading state — show while core data is fetching
+  const isLoading = userLoading || projectsLoading || conversationsLoading || wpLoading;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[rgba(0,0,0,0.12)] border-t-[#3A3A3A]" />
+          <p className="text-[14px] text-[#717182]">Loading dashboard…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -91,20 +110,10 @@ export default function Dashboard() {
               <Button variant="outline" size="sm">
                 <AlertCircle className="mr-2 h-4 w-4" />
                 Disputes
-                {mockStats.disputes > 0 && (
-                  <Badge variant="destructive" className="ml-2 h-5 px-1.5">
-                    {mockStats.disputes}
-                  </Badge>
-                )}
               </Button>
               <Button variant="outline" size="sm">
                 <Webhook className="mr-2 h-4 w-4" />
                 System
-                {mockStats.webhooks > 0 && (
-                  <Badge variant="secondary" className="ml-2 h-5 px-1.5">
-                    {mockStats.webhooks}
-                  </Badge>
-                )}
               </Button>
             </div>
           </div>
@@ -133,7 +142,7 @@ export default function Dashboard() {
               <div className="space-y-2 text-[15px] leading-relaxed text-[#3A3A3A]">
                 <div className="flex items-center gap-2">
                   <span className="text-[#717182]">→</span>
-                  <span>{mockStats.conversations} conversations sitting in raw form</span>
+                  <span>{conversationCount > 0 ? `${conversationCount} conversations sitting in raw form` : "No conversations uploaded yet"}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[#717182]">→</span>
@@ -167,7 +176,9 @@ export default function Dashboard() {
               <div className="mb-6 flex items-start justify-between group">
                 <div className="flex items-center gap-4">
                   <div className="text-6xl tracking-tight font-medium">
-                    ADVANCED–INTERMEDIATE
+                    {workProfile?.archetype?.primary
+                      ? `${workProfile.archetype.primary.toUpperCase()}${workProfile.archetype.secondary ? `–${workProfile.archetype.secondary.toUpperCase()}` : ""}`
+                      : "ADVANCED–INTERMEDIATE"}
                   </div>
                   <Button
                     variant="ghost"
@@ -186,7 +197,7 @@ export default function Dashboard() {
                   You control direction and get outcomes.
                 </p>
                 <p className="text-xl leading-relaxed text-[#717182]">
-                  But you don't define constraints early — so you waste cycles fixing things later.
+                  {workProfile?.narrative ?? "But you don't define constraints early — so you waste cycles fixing things later."}
                 </p>
               </div>
             </div>
@@ -199,7 +210,7 @@ export default function Dashboard() {
 
               <div className="mb-4 flex items-center gap-8 text-[15px]">
                 <div>
-                  <span className="font-medium text-[#3A3A3A]">{aiSortedProjects} real projects</span>
+                  <span className="font-medium text-[#3A3A3A]">{projectCount} real project{projectCount !== 1 ? "s" : ""}</span>
                 </div>
                 <div>
                   <span className="font-medium text-[#3A3A3A]">Verified profile</span>
@@ -224,7 +235,7 @@ export default function Dashboard() {
               <div className="group">
                 <div className="mb-2 flex items-center gap-2">
                   <div className="text-4xl tracking-tight" style={{ fontFamily: 'var(--font-serif)', color: 'var(--score-hls)' }}>
-                    {mockWorkProfile.human_leadership_score}%
+                    {hlsScore}%
                   </div>
                   <Button
                     variant="ghost"
@@ -242,7 +253,7 @@ export default function Dashboard() {
               <div className="group">
                 <div className="mb-2 flex items-center gap-2">
                   <div className="text-4xl tracking-tight" style={{ fontFamily: 'var(--font-serif)', color: 'var(--score-execution)' }}>
-                    {(mockWorkProfile.ai_execution_load * 100).toFixed(0)}%
+                    {(aelScore * 100).toFixed(0)}%
                   </div>
                   <Button
                     variant="ghost"
@@ -260,7 +271,7 @@ export default function Dashboard() {
               <div className="group">
                 <div className="mb-2 flex items-center gap-2">
                   <div className="text-4xl tracking-tight" style={{ fontFamily: 'var(--font-serif)', color: 'var(--score-cai)' }}>
-                    {mockWorkProfile.cai}x
+                    {caiScore}x
                   </div>
                   <Button
                     variant="ghost"
@@ -285,7 +296,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-4 gap-4">
             <div className="group">
               <div className="mb-1 flex items-center gap-2">
-                <div className="text-2xl tracking-tight text-[#717182]">{mockStats.conversations}</div>
+                <div className="text-2xl tracking-tight text-[#717182]">{conversationCount}</div>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -303,7 +314,7 @@ export default function Dashboard() {
 
             <div className="group">
               <div className="mb-1 flex items-center gap-2">
-                <div className="text-2xl tracking-tight text-[#717182]">{mockStats.projects}</div>
+                <div className="text-2xl tracking-tight text-[#717182]">{projectCount}</div>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -318,7 +329,7 @@ export default function Dashboard() {
 
             <div className="group">
               <div className="mb-1 flex items-center gap-2">
-                <div className="text-2xl tracking-tight text-[#717182]">{mockStats.assessments}</div>
+                <div className="text-2xl tracking-tight text-[#717182]">{assessmentCount}</div>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -333,7 +344,7 @@ export default function Dashboard() {
 
             <div className="group">
               <div className="mb-1 flex items-center gap-2">
-                <div className="text-2xl tracking-tight text-[#717182]">{mockStats.publishedProofs}</div>
+                <div className="text-2xl tracking-tight text-[#717182]">{publishedProofCount}</div>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -358,19 +369,25 @@ export default function Dashboard() {
               <h3 className="text-[15px]">Recent Activity</h3>
             </div>
             <div className="divide-y divide-[rgba(0,0,0,0.04)]">
-              {mockActivity.map((item) => (
-                <div key={item.id} className="px-6 py-4 hover:bg-[#FAFAFA] transition-colors">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="mb-0.5 text-[14px]">{item.action}</div>
-                      <div className="text-[13px] text-[#717182]">{item.detail}</div>
-                    </div>
-                    <div className="font-mono text-[12px] text-[#717182] whitespace-nowrap">
-                      {formatRelativeTime(item.timestamp)}
+              {activityLoading ? (
+                <div className="px-6 py-8 text-center text-[14px] text-[#717182]">Loading…</div>
+              ) : activityItems.length === 0 ? (
+                <div className="px-6 py-8 text-center text-[14px] text-[#717182]">No activity yet.</div>
+              ) : (
+                activityItems.slice(0, 10).map((item: any) => (
+                  <div key={item.id} className="px-6 py-4 hover:bg-[#FAFAFA] transition-colors">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="mb-0.5 text-[14px]">{item.action ?? item.type ?? item.event ?? "Activity"}</div>
+                        <div className="text-[13px] text-[#717182]">{item.detail ?? item.description ?? item.message ?? ""}</div>
+                      </div>
+                      <div className="font-mono text-[12px] text-[#717182] whitespace-nowrap">
+                        {item.timestamp ? formatRelativeTime(item.timestamp) : item.created_at ? formatRelativeTime(item.created_at) : ""}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
             <div className="border-t border-[rgba(0,0,0,0.06)] px-6 py-3">
               <Button variant="ghost" size="sm" className="w-full">
@@ -427,12 +444,14 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
-      
+
       <ShareDialog open={shareDialogOpen} onOpenChange={setShareDialogOpen} data={shareData} />
       <PaymentModal
         open={paymentModalOpen}
         onOpenChange={setPaymentModalOpen}
-        onComplete={() => setHasAISorted(true)}
+        onComplete={() => {
+          queryClient.invalidateQueries({ queryKey: ["projects"] });
+        }}
       />
     </div>
   );
