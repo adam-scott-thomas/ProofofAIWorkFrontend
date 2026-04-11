@@ -98,15 +98,11 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <span className="text-[#717182]">→</span>
-                <span>8 projects structured and grouped</span>
+                <span>Projects structured and grouped</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[#717182]">→</span>
-                <span>Verified profile scores (87% HLS, 4.37x CAI)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[#717182]">→</span>
-                <span>Shareable proof pages</span>
+                <span>Verified profile scores and shareable proof pages</span>
               </div>
             </div>
           </div>
