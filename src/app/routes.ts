@@ -1,62 +1,51 @@
 import { createBrowserRouter } from "react-router";
 import Layout from "./components/Layout";
-import StudentLayout from "./components/StudentLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
+import UploadFlow from "./pages/UploadFlow";
 import UploadPool from "./pages/UploadPool";
+import Upload from "./pages/Upload";
 import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
 import Conversations from "./pages/Conversations";
 import ConversationDetail from "./pages/ConversationDetail";
+import KnowledgeMapPage from "./pages/KnowledgeMapPage";
 import WorkProfile from "./pages/WorkProfile";
 import Assessments from "./pages/Assessments";
+import Processing from "./pages/Processing";
+import Results from "./pages/Results";
 import ProofPages from "./pages/ProofPages";
+import Billing from "./pages/Billing";
 import Search from "./pages/Search";
 import Account from "./pages/Account";
-import Billing from "./pages/Billing";
 import PublicProofPage from "./pages/PublicProofPage";
+import PublicProfile from "./pages/PublicProfile";
+import Leaderboard from "./pages/Leaderboard";
+import Methodology from "./pages/Methodology";
 import NotFound from "./pages/NotFound";
 import SignIn from "./pages/SignIn";
 import AuthCallback from "./pages/AuthCallback";
-import Upload from "./pages/Upload";
-import Processing from "./pages/Processing";
-import Results from "./pages/Results";
-import StudentSubmit from "./pages/StudentSubmit";
-import StudentProcessing from "./pages/StudentProcessing";
-import StudentResults from "./pages/StudentResults";
-import Methodology from "./pages/Methodology";
+import StudentUpload from "./pages/student/StudentUpload";
+import StudentAnalyze from "./pages/student/StudentAnalyze";
+import StudentShareGate from "./pages/student/StudentShareGate";
+import StudentResults from "./pages/student/StudentResults";
 import { createElement } from "react";
 
-// Helper to wrap a component with ProtectedRoute
 function protect(Component: React.ComponentType) {
   return () => createElement(ProtectedRoute, null, createElement(Component));
 }
 
 export const router = createBrowserRouter([
-  // Public landing page
+  // Public landing
+  { path: "/", Component: Landing },
+
+  // First-time upload flow (no sidebar)
+  { path: "/upload", Component: UploadFlow },
+
+  // Authenticated workspace
   {
-    path: "/",
-    Component: Landing,
-  },
-  // ──────────────────────────────────────────
-  // Student flow (simplified, no sidebar)
-  // ──────────────────────────────────────────
-  {
-    path: "/student",
-    Component: protect(StudentLayout),
-    children: [
-      { index: true, Component: StudentSubmit },
-      { path: "submit", Component: StudentSubmit },
-      { path: "processing/:id", Component: StudentProcessing },
-      { path: "results/:id", Component: StudentResults },
-    ],
-  },
-  // ──────────────────────────────────────────
-  // Professional dashboard (sidebar layout)
-  // ──────────────────────────────────────────
-  {
-    path: "/dashboard",
+    path: "/app",
     Component: protect(Layout),
     children: [
       { index: true, Component: Dashboard },
@@ -66,38 +55,33 @@ export const router = createBrowserRouter([
       { path: "projects/:id", Component: ProjectDetail },
       { path: "conversations", Component: Conversations },
       { path: "conversations/:id", Component: ConversationDetail },
+      { path: "knowledge-map", Component: KnowledgeMapPage },
       { path: "work-profile", Component: WorkProfile },
       { path: "assessments", Component: Assessments },
       { path: "assessment/:id/processing", Component: Processing },
       { path: "assessment/:id/results", Component: Results },
       { path: "proof-pages", Component: ProofPages },
+      { path: "billing", Component: Billing },
       { path: "search", Component: Search },
       { path: "account", Component: Account },
-      { path: "billing", Component: Billing },
     ],
   },
-  // Public proof pages (no sidebar)
-  {
-    path: "/p/:slug",
-    Component: PublicProofPage,
-  },
-  // Methodology (public, no auth)
-  {
-    path: "/methodology",
-    Component: Methodology,
-  },
-  // Auth pages (no sidebar)
-  {
-    path: "/sign-in",
-    Component: SignIn,
-  },
-  {
-    path: "/auth/callback",
-    Component: AuthCallback,
-  },
-  // 404 Not Found
-  {
-    path: "*",
-    Component: NotFound,
-  },
+
+  // Public pages
+  { path: "/@:username", Component: PublicProfile },
+  { path: "/p/:slug", Component: PublicProofPage },
+  { path: "/leaderboard", Component: Leaderboard },
+  { path: "/methodology", Component: Methodology },
+
+  // Student flow (no sidebar)
+  { path: "/student/upload", Component: StudentUpload },
+  { path: "/student/analyze", Component: StudentAnalyze },
+  { path: "/student/share", Component: StudentShareGate },
+  { path: "/student/results", Component: StudentResults },
+
+  // Auth
+  { path: "/sign-in", Component: SignIn },
+  { path: "/auth/callback", Component: AuthCallback },
+
+  { path: "*", Component: NotFound },
 ]);
