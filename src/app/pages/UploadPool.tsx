@@ -1,11 +1,14 @@
-import { Upload, AlertCircle, CheckCircle2, Clock, Download, Trash2 } from "lucide-react";
+import { Upload, AlertCircle, CheckCircle2, Clock, Download, Trash2, Loader2, Sparkles } from "lucide-react";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Progress } from "../components/ui/progress";
 import { useState } from "react";
 import { UploadDialog } from "../components/UploadDialog";
-import { usePool, useUploads } from "../../hooks/useApi";
+import { PaymentModal } from "../components/PaymentModal";
+import { usePool, useUploads, useTriggerClustering, useAiCluster } from "../../hooks/useApi";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 function StatusBadge({ status, progress }: { status: string; progress?: number }) {
   if (status === "completed" || status === "done") {
@@ -41,6 +44,9 @@ function StatusBadge({ status, progress }: { status: string; progress?: number }
 
 export default function UploadPool() {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const qc = useQueryClient();
+  const clusterMutation = useTriggerClustering();
 
   const { data: poolData, isLoading: poolLoading } = usePool();
   const { data: uploadsData, isLoading: uploadsLoading } = useUploads();
@@ -105,11 +111,26 @@ export default function UploadPool() {
             </p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline">
+            <Button
+              variant="outline"
+              disabled={clusterMutation.isPending}
+              onClick={() => {
+                clusterMutation.mutate(undefined, {
+                  onSuccess: () => {
+                    toast.success("Clustering complete — check Projects page");
+                    qc.invalidateQueries({ queryKey: ["projects"] });
+                    qc.invalidateQueries({ queryKey: ["pool"] });
+                  },
+                  onError: (err: any) => toast.error(err?.message ?? "Clustering failed"),
+                });
+              }}
+            >
+              {clusterMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Free Clustering
               <span className="ml-2 text-[11px] text-[#717182]">Rule-based</span>
             </Button>
-            <Button>
+            <Button onClick={() => setPaymentModalOpen(true)}>
+              <Sparkles className="mr-2 h-4 w-4" />
               AI Clustering
               <span className="ml-2 text-[11px]">$7</span>
             </Button>
@@ -189,6 +210,15 @@ export default function UploadPool() {
       </div>
 
       <UploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} />
+      <PaymentModal
+        open={paymentModalOpen}
+        onOpenChange={setPaymentModalOpen}
+        onComplete={() => {
+          qc.invalidateQueries({ queryKey: ["projects"] });
+          qc.invalidateQueries({ queryKey: ["pool"] });
+          toast.success("AI Sort complete — check Projects page");
+        }}
+      />
     </div>
   );
 }

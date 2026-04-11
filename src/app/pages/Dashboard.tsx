@@ -425,10 +425,12 @@ export default function Dashboard() {
                   </div>
                 </>
               )}
-              <Button variant="outline" className="w-full justify-start" size="sm">
-                <Upload className="mr-2 h-4 w-4" />
-                Upload Conversations
-              </Button>
+              <Link to="/app/upload">
+                <Button variant="outline" className="w-full justify-start" size="sm">
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Conversations
+                </Button>
+              </Link>
               <div className="px-2 py-1">
                 <div className="text-[12px] leading-relaxed text-[#717182]">
                   → increase sample size for stronger signals
@@ -436,10 +438,12 @@ export default function Dashboard() {
               </div>
               {hasAISorted && (
                 <>
-                  <Button variant="outline" className="w-full justify-start" size="sm">
-                    <Globe className="mr-2 h-4 w-4" />
-                    Publish Proof Page
-                  </Button>
+                  <Link to="/app/proof-pages">
+                    <Button variant="outline" className="w-full justify-start" size="sm">
+                      <Globe className="mr-2 h-4 w-4" />
+                      Publish Proof Page
+                    </Button>
+                  </Link>
                   <div className="px-2 py-1">
                     <div className="text-[12px] leading-relaxed text-[#717182]">
                       → publish verified evidence of your capacity
