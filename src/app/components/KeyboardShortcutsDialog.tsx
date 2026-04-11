@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "./ui/dialog";
 import { Separator } from "./ui/separator";
 
@@ -52,6 +53,9 @@ export function KeyboardShortcutsDialog({ open, onOpenChange }: KeyboardShortcut
             <Command className="h-5 w-5" />
             Keyboard Shortcuts
           </DialogTitle>
+          <DialogDescription>
+            Navigate and perform actions faster with keyboard shortcuts
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
           {shortcuts.map((section) => (

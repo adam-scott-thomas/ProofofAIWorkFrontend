@@ -1,231 +1,227 @@
-import { Link } from "react-router";
-import { ArrowRight, Brain, Shield, TrendingUp, Zap, Upload, BarChart3, GraduationCap } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
-import { useAuthStore } from "../../stores/authStore";
+import { ArrowRight, Check } from "lucide-react";
+import { useNavigate } from "react-router";
 
 export default function Landing() {
-  const { isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-white">
-      {/* Nav */}
-      <header className="container mx-auto px-6 py-6 flex items-center justify-between">
-        <div className="text-xl font-bold tracking-tight">
-          Proof<span className="text-blue-400">of</span>AI<span className="text-blue-400">Work</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link to="/methodology">
-            <Button variant="ghost" className="text-gray-400 hover:text-white">
-              Methodology
-            </Button>
-          </Link>
-          <Link to={isAuthenticated() ? "/student" : "/sign-in?next=/student"}>
-            <Button variant="ghost" className="text-gray-400 hover:text-white">
-              <GraduationCap className="w-4 h-4 mr-1.5" />
-              For students
-            </Button>
-          </Link>
-          {isAuthenticated() ? (
-            <Link to="/dashboard">
-              <Button variant="outline" className="border-gray-700 text-black bg-white hover:bg-gray-100">
-                Dashboard <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
-            </Link>
-          ) : (
-            <Link to="/sign-in">
-              <Button className="bg-blue-600 hover:bg-blue-500">
-                Sign In
-              </Button>
-            </Link>
-          )}
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-[#FAFAFA]">
       {/* Hero */}
-      <section className="container mx-auto px-6 py-24 text-center max-w-4xl">
-        <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6">
-          Turn AI-assisted work into{" "}
-          <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            verifiable proof
-          </span>
-        </h1>
-        <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
-          Upload your ChatGPT, Claude, or Grok conversations. Get scored on leadership,
-          AI leverage, and cognitive amplification. Share proof of how you work with AI.
-        </p>
-        <div className="flex gap-4 justify-center">
-          <Link to="/student">
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-500 text-lg px-8 py-6">
-              Dashboard <ArrowRight className="w-5 h-5 ml-2" />
+      <section className="relative mx-auto max-w-6xl px-8 pt-32 pb-40">
+        <div className="text-center">
+          <h1 className="mb-8 text-8xl tracking-tight leading-[0.95] drop-shadow-sm">
+            Turn AI work
+            <br />
+            into proof.
+          </h1>
+          <p className="mx-auto mb-16 max-w-2xl text-2xl text-[#717182] leading-relaxed">
+            Upload your ChatGPT, Claude, or Grok conversations. See how you actually think,
+            direct, and execute with AI.
+          </p>
+          <div className="flex items-center justify-center gap-6">
+            <Button
+              size="lg"
+              className="h-16 min-w-[280px] text-xl font-medium shadow-lg hover:shadow-xl transition-shadow"
+              onClick={() => navigate("/upload")}
+            >
+              Upload your conversations
             </Button>
-          </Link>
+            <button
+              className="text-lg text-[#717182] underline underline-offset-8 hover:text-[#030213] transition-colors"
+              onClick={() => {
+                const whatItShowsSection = document.getElementById("how-it-works");
+                whatItShowsSection?.scrollIntoView({ behavior: "smooth" });
+              }}
+            >
+              See how it works
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* ═══════════ Student section ═══════════ */}
-      <section className="container mx-auto px-6 py-16">
-        <div className="max-w-4xl mx-auto">
-          <Card className="bg-gradient-to-br from-blue-900/40 to-purple-900/20 border-blue-700/30 p-0 overflow-hidden">
-            <div className="grid md:grid-cols-2 gap-0">
-              {/* Left - messaging */}
-              <div className="p-10">
-                <div className="flex items-center gap-2 mb-4">
-                  <GraduationCap className="w-6 h-6 text-blue-400" />
-                  <span className="text-sm font-medium text-blue-300 uppercase tracking-wider">For students</span>
+      {/* Before vs After */}
+      <section className="border-y border-[rgba(0,0,0,0.12)] bg-[#030213] py-32">
+        <div className="mx-auto max-w-6xl px-8">
+          <div className="mb-12 text-center text-sm uppercase tracking-widest text-[#717182]">
+            From noise → structure
+          </div>
+
+          <div className="grid grid-cols-2 gap-12">
+            {/* Left: Raw */}
+            <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-10 shadow-[inset_0_2px_8px_rgba(0,0,0,0.3)]">
+              <h3 className="mb-8 text-3xl tracking-tight text-[#717182]">
+                Raw Conversations
+              </h3>
+              <div className="space-y-4 text-base text-[#717182]">
+                <div className="opacity-50">— unstructured chat logs</div>
+                <div className="opacity-50">— vague output</div>
+                <div className="opacity-50">— no clear ownership</div>
+              </div>
+            </div>
+
+            {/* Right: Structured */}
+            <div className="rounded-lg border-2 border-[#00C853] bg-white p-10 shadow-[0_20px_60px_rgba(0,200,83,0.3),0_8px_24px_rgba(0,0,0,0.15)]">
+              <h3 className="mb-8 text-3xl tracking-tight">AI Work Profile</h3>
+              <div className="space-y-4 text-base">
+                <div className="flex items-center gap-3">
+                  <Check className="h-5 w-5 text-[#00C853]" />
+                  organized projects
                 </div>
-                <h2 className="text-3xl font-bold mb-4 text-white">
-                  Prove your work is yours
-                </h2>
-                <p className="text-gray-400 mb-6 leading-relaxed">
-                  Used ChatGPT or Claude to help with an assignment? Upload the conversation,
-                  and we'll show exactly what you directed versus what AI produced.
-                  Share the report with your professor.
-                </p>
-                <Link to={isAuthenticated() ? "/student" : "/sign-in?next=/student"}>
-                  <Button size="lg" className="bg-blue-600 hover:bg-blue-500">
-                    Submit your work
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </Link>
+                <div className="flex items-center gap-3">
+                  <Check className="h-5 w-5 text-[#00C853]" />
+                  clear verdict
+                </div>
+                <div className="flex items-center gap-3">
+                  <Check className="h-5 w-5 text-[#00C853]" />
+                  strength + gap
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* What This Shows */}
+      <section id="how-it-works" className="py-32">
+        <div className="mx-auto max-w-5xl px-8">
+          <h2 className="mb-20 text-center text-5xl tracking-tight">
+            What you actually did
+          </h2>
+
+          <div className="grid grid-cols-3 gap-12">
+            <div className="rounded-lg border border-[rgba(0,0,0,0.08)] bg-white p-8 shadow-md hover:shadow-xl transition-shadow">
+              <h3 className="mb-4 text-2xl tracking-tight">Human Leadership</h3>
+              <p className="text-lg text-[#717182]">Did you direct the work?</p>
+            </div>
+
+            <div className="rounded-lg border border-[rgba(0,0,0,0.08)] bg-white p-8 shadow-md hover:shadow-xl transition-shadow">
+              <h3 className="mb-4 text-2xl tracking-tight">AI Execution</h3>
+              <p className="text-lg text-[#717182]">
+                How much did AI actually do?
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-[rgba(0,0,0,0.08)] bg-white p-8 shadow-md hover:shadow-xl transition-shadow">
+              <h3 className="mb-4 text-2xl tracking-tight">Cognitive Amplification</h3>
+              <p className="text-lg text-[#717182]">
+                How much did AI increase your output?
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Output Preview */}
+      <section className="border-y border-[rgba(0,0,0,0.12)] bg-gradient-to-b from-white to-[#FAFAFA] py-32">
+        <div className="mx-auto max-w-3xl px-8">
+          <Card className="border-2 border-[rgba(0,0,0,0.12)] p-12 shadow-[0_24px_64px_rgba(0,0,0,0.15),0_8px_24px_rgba(0,0,0,0.08)]">
+            <div className="mb-10 space-y-4 text-2xl leading-relaxed">
+              <p className="font-medium">You get results.</p>
+              <p className="text-[#717182]">But not consistently.</p>
+              <p className="text-[#717182]">
+                You rely on iteration instead of structure.
+              </p>
+            </div>
+
+            <div className="mb-10 rounded-lg border-4 border-[var(--score-execution)] bg-[#FAFAFA] p-8 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]">
+              <div className="mb-3 text-xs uppercase tracking-widest text-[#717182]">
+                Your Level
+              </div>
+              <div className="text-6xl tracking-tight font-medium">ADVANCED–INTERMEDIATE</div>
+            </div>
+
+            <div className="space-y-5 text-base">
+              <div className="rounded-lg bg-[#FAFAFA] p-6 border border-[rgba(0,0,0,0.06)] shadow-sm">
+                <div className="mb-2 text-xs uppercase tracking-widest text-[#717182]">
+                  Strength
+                </div>
+                <p className="text-lg">You control direction and get outcomes</p>
               </div>
 
-              {/* Right - 3 steps */}
-              <div className="bg-gray-900/50 p-10 flex flex-col justify-center">
-                <div className="space-y-6">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">
-                      1
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-white mb-1">Upload your conversation</h3>
-                      <p className="text-sm text-gray-500">Export from ChatGPT or Claude. Drop the file.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">
-                      2
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-white mb-1">Get your report</h3>
-                      <p className="text-sm text-gray-500">See how much you directed versus what AI produced.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">
-                      3
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-white mb-1">Share with your professor</h3>
-                      <p className="text-sm text-gray-500">One link. No account needed on their end.</p>
-                    </div>
-                  </div>
+              <div className="rounded-lg bg-[#FAFAFA] p-6 border border-[rgba(0,0,0,0.06)] shadow-sm">
+                <div className="mb-2 text-xs uppercase tracking-widest text-[#717182]">
+                  Gap
                 </div>
+                <p className="text-lg">You don't define constraints early</p>
               </div>
             </div>
           </Card>
         </div>
       </section>
 
-      {/* How it works (professional) */}
-      <section className="container mx-auto px-6 py-16">
-        <h2 className="text-3xl font-bold text-center mb-12">How it works</h2>
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          <Card className="bg-gray-900/50 border-gray-800 p-8 text-center">
-            <Upload className="w-10 h-10 text-blue-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2 text-white">1. Upload your exports</h3>
-            <p className="text-gray-400 text-sm">
-              Download your data from ChatGPT, Claude, or Grok. Upload the zip.
-              We parse conversations, attachments, code blocks — everything.
-            </p>
-          </Card>
-          <Card className="bg-gray-900/50 border-gray-800 p-8 text-center">
-            <Brain className="w-10 h-10 text-purple-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2 text-white">2. Get evaluated</h3>
-            <p className="text-gray-400 text-sm">
-              Our pipeline scores your work across leadership, execution, complexity,
-              and amplification. Three scores, not one — because ownership, labor, and
-              leverage are different things.
-            </p>
-          </Card>
-          <Card className="bg-gray-900/50 border-gray-800 p-8 text-center">
-            <BarChart3 className="w-10 h-10 text-green-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2 text-white">3. Share your profile</h3>
-            <p className="text-gray-400 text-sm">
-              Publish a proof page showing your AI Work Profile.
-              Backed by evidence, not vibes. Verifiable, not claims.
-            </p>
-          </Card>
-        </div>
-      </section>
+      {/* For Students / For Operators */}
+      <section className="py-32">
+        <div className="mx-auto max-w-6xl px-8">
+          <div className="grid grid-cols-2 gap-12">
+            <div className="rounded-xl border border-[rgba(0,0,0,0.08)] bg-white p-12 shadow-lg hover:shadow-2xl transition-shadow">
+              <h3 className="mb-6 text-4xl tracking-tight">For students</h3>
+              <div className="space-y-3 text-xl text-[#717182]">
+                <p>— prove your work is yours</p>
+                <p>— show what you directed vs AI</p>
+              </div>
+            </div>
 
-      {/* Three scores */}
-      <section className="container mx-auto px-6 py-16">
-        <h2 className="text-3xl font-bold text-center mb-12">Three scores. Three dimensions.</h2>
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/10 border border-blue-800/30 rounded-xl p-8">
-            <div className="text-4xl font-bold text-blue-400 mb-2">HLS</div>
-            <div className="text-sm text-blue-300 mb-4">Human Leadership Score</div>
-            <p className="text-gray-400 text-sm">
-              Who directed, constrained, corrected, and owned the work?
-              Measures authorship and orchestration, not execution. 0–100.
-            </p>
-          </div>
-          <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/10 border border-purple-800/30 rounded-xl p-8">
-            <div className="text-4xl font-bold text-purple-400 mb-2">AEL</div>
-            <div className="text-sm text-purple-300 mb-4">AI Execution Load</div>
-            <p className="text-gray-400 text-sm">
-              How much of the literal production was handled by AI?
-              A user can write zero code and still score high leadership. 0–100%.
-            </p>
-          </div>
-          <div className="bg-gradient-to-br from-green-900/30 to-green-800/10 border border-green-800/30 rounded-xl p-8">
-            <div className="text-4xl font-bold text-green-400 mb-2">CAI</div>
-            <div className="text-sm text-green-300 mb-4">Cognitive Amplification Index</div>
-            <p className="text-gray-400 text-sm">
-              How much did AI increase your effective capacity?
-              Log₂-bounded. Measures real leverage, not inflation. Baseline 100%.
-            </p>
+            <div className="rounded-xl border border-[rgba(0,0,0,0.08)] bg-white p-12 shadow-lg hover:shadow-2xl transition-shadow">
+              <h3 className="mb-6 text-4xl tracking-tight">For operators</h3>
+              <div className="space-y-3 text-xl text-[#717182]">
+                <p>— see how you actually work</p>
+                <p>— identify where you waste cycles</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Trust + Methodology */}
-      <section className="container mx-auto px-6 py-16 text-center">
-        <div className="flex flex-wrap justify-center gap-8 text-sm text-gray-500 mb-6">
-          <div className="flex items-center gap-2"><Shield className="w-4 h-4" /> Evidence-backed scoring</div>
-          <div className="flex items-center gap-2"><Zap className="w-4 h-4" /> Adversarial integrity checks</div>
-          <div className="flex items-center gap-2"><TrendingUp className="w-4 h-4" /> Longitudinal maturity tracking</div>
-        </div>
-        <Link to="/methodology" className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm transition-colors">
-          Read our open scoring methodology — every formula, weight, and threshold published
-          <ArrowRight className="w-4 h-4" />
-        </Link>
-      </section>
+      {/* Student Section */}
+      <section className="border-y border-[rgba(0,0,0,0.12)] bg-gradient-to-b from-[#FAFAFA] to-white py-32">
+        <div className="mx-auto max-w-3xl px-8 text-center">
+          <h2 className="mb-12 text-5xl tracking-tight drop-shadow-sm">Free for students.</h2>
 
-      {/* CTA */}
-      <section className="container mx-auto px-6 py-20 text-center">
-        <h2 className="text-3xl font-bold mb-4">Ready to prove your work?</h2>
-        <p className="text-gray-400 mb-8">Upload your first conversation export and get scored in minutes.</p>
-        <div className="flex gap-4 justify-center">
-          <Link to="/student">
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-500 text-lg px-8 py-6">
-              Dashboard <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-gray-800 py-8">
-        <div className="container mx-auto px-6 text-center text-sm text-gray-600">
-          <div className="mb-2">ProofofAIWork — Adam Thomas LLC</div>
-          <div className="flex justify-center gap-6">
-            <Link to="/methodology" className="text-gray-500 hover:text-gray-400 transition-colors">Methodology</Link>
-            <a href="mailto:support@proofofaiwork.com" className="text-gray-500 hover:text-gray-400 transition-colors">support@proofofaiwork.com</a>
+          <div className="mb-12 space-y-6 text-2xl leading-relaxed">
+            <p>Upload your conversations.</p>
+            <p className="text-[#717182]">See how you actually work with AI.</p>
           </div>
+
+          <div className="mb-6 text-xl text-[#717182]">
+            Your proof page is public by default.
+          </div>
+
+          <div className="mb-12 text-xl">
+            Because proof is meant to be seen.
+          </div>
+
+          <Button
+            size="lg"
+            className="h-14 min-w-[240px] text-lg font-medium shadow-lg hover:shadow-xl transition-shadow"
+            onClick={() => navigate("/upload")}
+          >
+            Upload your work
+          </Button>
         </div>
-      </footer>
+      </section>
+
+      {/* Final CTA */}
+      <section className="relative py-40 bg-gradient-to-b from-[#030213] to-[#000000]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(0,200,83,0.08),transparent_50%)]"></div>
+        <div className="relative mx-auto max-w-3xl px-8 text-center">
+          <h2 className="mb-4 text-6xl tracking-tight text-white leading-tight drop-shadow-lg">
+            Upload one conversation.
+          </h2>
+          <h2 className="mb-12 text-6xl tracking-tight text-white leading-tight drop-shadow-lg">
+            Get your verdict.
+          </h2>
+          <Button
+            size="lg"
+            className="h-16 min-w-[280px] text-xl font-medium bg-white text-[#030213] hover:bg-[#F5F5F7] shadow-[0_20px_60px_rgba(255,255,255,0.2),0_8px_24px_rgba(255,255,255,0.15)] hover:shadow-[0_24px_80px_rgba(255,255,255,0.3),0_12px_32px_rgba(255,255,255,0.2)] transition-shadow"
+            onClick={() => navigate("/upload")}
+          >
+            Upload now
+            <ArrowRight className="ml-3 h-6 w-6" />
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }
