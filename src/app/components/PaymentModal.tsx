@@ -44,9 +44,24 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
     }
   };
 
+  const [unlocking, setUnlocking] = useState(false);
+
+  const runAiSort = async () => {
+    setUnlocking(true);
+    setError(null);
+    try {
+      await apiPost("/projects/ai-cluster", {});
+      onOpenChange(false);
+      onComplete();
+    } catch (e: any) {
+      setError(e.message || "AI Sort failed. Please try again.");
+    } finally {
+      setUnlocking(false);
+    }
+  };
+
   const handleFreeUnlock = () => {
-    onOpenChange(false);
-    onComplete();
+    runAiSort();
   };
 
   const handleClose = (open: boolean) => {
@@ -65,11 +80,10 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
     setCardLoading(true);
     try {
       await apiPost("/payments/ai-sort", { source_id: sourceId });
-      onOpenChange(false);
-      onComplete();
+      // Payment succeeded — now run AI clustering
+      await runAiSort();
     } catch (e: any) {
       setError(e.message || "Payment failed. Please try again.");
-    } finally {
       setCardLoading(false);
     }
   };
@@ -168,9 +182,12 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
           {/* Free unlock with coupon */}
           {isFreeWithCoupon ? (
             <div className="space-y-3">
-              <Button className="w-full" size="lg" onClick={handleFreeUnlock}>
-                <Sparkles className="mr-2 h-5 w-5" />
-                Unlock — Free
+              <Button className="w-full" size="lg" onClick={handleFreeUnlock} disabled={unlocking}>
+                {unlocking ? (
+                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Running AI Sort...</>
+                ) : (
+                  <><Sparkles className="mr-2 h-5 w-5" /> Unlock — Free</>
+                )}
               </Button>
               <p className="text-center text-[12px] text-[#717182]">
                 Coupon {coupon.trim().toUpperCase()} applied. No payment required.
