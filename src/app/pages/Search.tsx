@@ -4,56 +4,28 @@ import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { useState } from "react";
-
-const mockSearchResults = {
-  conversations: [
-    {
-      id: "conv_1",
-      title: "Mobile navigation redesign with accessibility focus",
-      snippet: "...The current hamburger menu doesn't work well with screen readers and keyboard navigation...",
-      project: "Mobile App Redesign",
-      relevance: 0.92,
-    },
-    {
-      id: "conv_7",
-      title: "OAuth2 implementation security best practices",
-      snippet: "...What are the current security best practices for token storage, rotation, and PKCE?...",
-      project: "Security Audit & Remediation",
-      relevance: 0.88,
-    },
-  ],
-  projects: [
-    {
-      id: "proj_1",
-      name: "Mobile App Redesign",
-      description: "Complete redesign of mobile experience with focus on accessibility and performance",
-      conversationCount: 23,
-      relevance: 0.95,
-    },
-    {
-      id: "proj_7",
-      name: "Security Audit & Remediation",
-      description: "Comprehensive security review and vulnerability remediation",
-      conversationCount: 19,
-      relevance: 0.87,
-    },
-  ],
-  proofPages: [
-    {
-      id: "proof_1",
-      projectName: "Backend Architecture Migration",
-      slug: "backend-arch-migration-alex-chen",
-      cai: 456,
-      hls: 89,
-      relevance: 0.82,
-    },
-  ],
-};
+import { useState, useEffect } from "react";
+import { useGlobalSearch } from "../../hooks/useApi";
 
 export default function Search() {
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const { data: searchResults, isLoading } = useGlobalSearch(debouncedQuery);
+
+  const conversations: any[] = searchResults?.conversations ?? [];
+  const projects: any[] = searchResults?.projects ?? [];
+  const proofPages: any[] = searchResults?.proof_pages ?? searchResults?.proofPages ?? [];
+
+  const totalCount = conversations.length + projects.length + proofPages.length;
 
   const removeFilter = (filter: string) => {
     setActiveFilters(activeFilters.filter(f => f !== filter));
@@ -91,7 +63,7 @@ export default function Search() {
               className="h-12 pl-12 text-[15px] border-none bg-transparent focus-visible:ring-0"
             />
           </div>
-          
+
           {/* Active Filters */}
           {activeFilters.length > 0 && (
             <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[rgba(0,0,0,0.06)] pt-4">
@@ -154,208 +126,267 @@ export default function Search() {
           </Button>
         </div>
 
+        {/* Loading state */}
+        {isLoading && debouncedQuery.length >= 2 && (
+          <div className="mb-6 text-center text-[13px] text-[#717182]">Searching...</div>
+        )}
+
+        {/* Empty state — query entered but no results */}
+        {!isLoading && debouncedQuery.length >= 2 && totalCount === 0 && (
+          <div className="mb-6 rounded-md border border-[rgba(0,0,0,0.08)] bg-white p-8 text-center shadow-sm">
+            <p className="text-[14px] text-[#717182]">No results found for "{debouncedQuery}"</p>
+          </div>
+        )}
+
+        {/* Prompt state — nothing typed yet */}
+        {debouncedQuery.length < 2 && !isLoading && (
+          <div className="mb-6 rounded-md border border-[rgba(0,0,0,0.08)] bg-white p-8 text-center shadow-sm">
+            <p className="text-[13px] text-[#717182]">Type at least 2 characters to search</p>
+          </div>
+        )}
+
         {/* Results Tabs */}
-        <Tabs defaultValue="all" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="all">
-              All Results <Badge variant="secondary" className="ml-2 bg-[#F5F5F7]">14</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="conversations">
-              Conversations <Badge variant="secondary" className="ml-2 bg-[#F5F5F7]">2</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="projects">
-              Projects <Badge variant="secondary" className="ml-2 bg-[#F5F5F7]">2</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="proofs">
-              Proof Pages <Badge variant="secondary" className="ml-2 bg-[#F5F5F7]">1</Badge>
-            </TabsTrigger>
-          </TabsList>
+        {totalCount > 0 && (
+          <Tabs defaultValue="all" className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="all">
+                All Results <Badge variant="secondary" className="ml-2 bg-[#F5F5F7]">{totalCount}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="conversations">
+                Conversations <Badge variant="secondary" className="ml-2 bg-[#F5F5F7]">{conversations.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="projects">
+                Projects <Badge variant="secondary" className="ml-2 bg-[#F5F5F7]">{projects.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="proofs">
+                Proof Pages <Badge variant="secondary" className="ml-2 bg-[#F5F5F7]">{proofPages.length}</Badge>
+              </TabsTrigger>
+            </TabsList>
 
-          {/* All Results */}
-          <TabsContent value="all" className="space-y-6">
-            {/* Projects Section */}
-            <div>
-              <div className="mb-3 text-[13px] uppercase tracking-wider text-[#717182]">
-                Projects
-              </div>
-              <div className="space-y-3">
-                {mockSearchResults.projects.map((project) => (
-                  <Card key={project.id} className="border border-[rgba(0,0,0,0.08)] bg-white p-5 shadow-sm hover:border-[rgba(0,0,0,0.15)] transition-all">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="mb-1 flex items-center gap-3">
-                          <h3 className="text-[14px]">{project.name}</h3>
-                          <div className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-mono text-blue-700">
-                            {Math.round(project.relevance * 100)}% match
+            {/* All Results */}
+            <TabsContent value="all" className="space-y-6">
+              {/* Projects Section */}
+              {projects.length > 0 && (
+                <div>
+                  <div className="mb-3 text-[13px] uppercase tracking-wider text-[#717182]">
+                    Projects
+                  </div>
+                  <div className="space-y-3">
+                    {projects.map((project: any) => (
+                      <Card key={project.id} className="border border-[rgba(0,0,0,0.08)] bg-white p-5 shadow-sm hover:border-[rgba(0,0,0,0.15)] transition-all">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="mb-1 flex items-center gap-3">
+                              <h3 className="text-[14px]">{project.name}</h3>
+                              {project.relevance != null && (
+                                <div className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-mono text-blue-700">
+                                  {Math.round(project.relevance * 100)}% match
+                                </div>
+                              )}
+                            </div>
+                            <p className="mb-2 text-[13px] text-[#717182]">{project.description}</p>
+                            {project.conversationCount != null && (
+                              <div className="text-[13px] text-[#717182]">
+                                {project.conversationCount} conversations
+                              </div>
+                            )}
                           </div>
+                          <Button variant="outline" size="sm">
+                            View Project
+                          </Button>
                         </div>
-                        <p className="mb-2 text-[13px] text-[#717182]">{project.description}</p>
-                        <div className="text-[13px] text-[#717182]">
-                          {project.conversationCount} conversations
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        View Project
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-            {/* Conversations Section */}
-            <div>
-              <div className="mb-3 text-[13px] uppercase tracking-wider text-[#717182]">
-                Conversations
-              </div>
-              <div className="space-y-3">
-                {mockSearchResults.conversations.map((conv) => (
-                  <Card key={conv.id} className="border border-[rgba(0,0,0,0.08)] bg-white p-5 shadow-sm hover:border-[rgba(0,0,0,0.15)] transition-all">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="mb-1 flex items-center gap-3">
-                          <h3 className="text-[14px]">{conv.title}</h3>
+              {/* Conversations Section */}
+              {conversations.length > 0 && (
+                <div>
+                  <div className="mb-3 text-[13px] uppercase tracking-wider text-[#717182]">
+                    Conversations
+                  </div>
+                  <div className="space-y-3">
+                    {conversations.map((conv: any) => (
+                      <Card key={conv.id} className="border border-[rgba(0,0,0,0.08)] bg-white p-5 shadow-sm hover:border-[rgba(0,0,0,0.15)] transition-all">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="mb-1 flex items-center gap-3">
+                              <h3 className="text-[14px]">{conv.title}</h3>
+                              {conv.relevance != null && (
+                                <div className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-mono text-blue-700">
+                                  {Math.round(conv.relevance * 100)}% match
+                                </div>
+                              )}
+                            </div>
+                            {conv.snippet && (
+                              <p className="mb-2 text-[13px] text-[#717182] italic">{conv.snippet}</p>
+                            )}
+                            {conv.project && (
+                              <Badge variant="secondary" className="bg-[#F5F5F7]">
+                                {conv.project}
+                              </Badge>
+                            )}
+                          </div>
+                          <Button variant="outline" size="sm">
+                            View Conversation
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Proof Pages Section */}
+              {proofPages.length > 0 && (
+                <div>
+                  <div className="mb-3 text-[13px] uppercase tracking-wider text-[#717182]">
+                    Proof Pages
+                  </div>
+                  <div className="space-y-3">
+                    {proofPages.map((proof: any) => (
+                      <Card key={proof.id} className="border border-[rgba(0,0,0,0.08)] bg-white p-5 shadow-sm hover:border-[rgba(0,0,0,0.15)] transition-all">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="mb-2 flex items-center gap-3">
+                              <h3 className="text-[14px]">{proof.projectName ?? proof.project_name}</h3>
+                              {proof.relevance != null && (
+                                <div className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-mono text-blue-700">
+                                  {Math.round(proof.relevance * 100)}% match
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-4">
+                              {proof.cai != null && (
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-[11px] uppercase tracking-wider text-[#717182]">CAI</span>
+                                  <span className="font-mono text-[15px]" style={{ color: 'var(--score-cai)' }}>
+                                    {proof.cai}
+                                  </span>
+                                </div>
+                              )}
+                              {proof.hls != null && (
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-[11px] uppercase tracking-wider text-[#717182]">HLS</span>
+                                  <span className="font-mono text-[15px]" style={{ color: 'var(--score-hls)' }}>
+                                    {proof.hls}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <Button variant="outline" size="sm">
+                            View Proof Page
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="conversations" className="space-y-3">
+              {conversations.map((conv: any) => (
+                <Card key={conv.id} className="border border-[rgba(0,0,0,0.08)] bg-white p-5 shadow-sm hover:border-[rgba(0,0,0,0.15)] transition-all">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="mb-1 flex items-center gap-3">
+                        <h3 className="text-[14px]">{conv.title}</h3>
+                        {conv.relevance != null && (
                           <div className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-mono text-blue-700">
                             {Math.round(conv.relevance * 100)}% match
                           </div>
-                        </div>
+                        )}
+                      </div>
+                      {conv.snippet && (
                         <p className="mb-2 text-[13px] text-[#717182] italic">{conv.snippet}</p>
+                      )}
+                      {conv.project && (
                         <Badge variant="secondary" className="bg-[#F5F5F7]">
                           {conv.project}
                         </Badge>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        View Conversation
-                      </Button>
+                      )}
                     </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
+                    <Button variant="outline" size="sm">
+                      View Conversation
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </TabsContent>
 
-            {/* Proof Pages Section */}
-            <div>
-              <div className="mb-3 text-[13px] uppercase tracking-wider text-[#717182]">
-                Proof Pages
-              </div>
-              <div className="space-y-3">
-                {mockSearchResults.proofPages.map((proof) => (
-                  <Card key={proof.id} className="border border-[rgba(0,0,0,0.08)] bg-white p-5 shadow-sm hover:border-[rgba(0,0,0,0.15)] transition-all">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="mb-2 flex items-center gap-3">
-                          <h3 className="text-[14px]">{proof.projectName}</h3>
+            <TabsContent value="projects" className="space-y-3">
+              {projects.map((project: any) => (
+                <Card key={project.id} className="border border-[rgba(0,0,0,0.08)] bg-white p-5 shadow-sm hover:border-[rgba(0,0,0,0.15)] transition-all">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="mb-1 flex items-center gap-3">
+                        <h3 className="text-[14px]">{project.name}</h3>
+                        {project.relevance != null && (
+                          <div className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-mono text-blue-700">
+                            {Math.round(project.relevance * 100)}% match
+                          </div>
+                        )}
+                      </div>
+                      <p className="mb-2 text-[13px] text-[#717182]">{project.description}</p>
+                      {project.conversationCount != null && (
+                        <div className="text-[13px] text-[#717182]">
+                          {project.conversationCount} conversations
+                        </div>
+                      )}
+                    </div>
+                    <Button variant="outline" size="sm">
+                      View Project
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </TabsContent>
+
+            <TabsContent value="proofs" className="space-y-3">
+              {proofPages.map((proof: any) => (
+                <Card key={proof.id} className="border border-[rgba(0,0,0,0.08)] bg-white p-5 shadow-sm hover:border-[rgba(0,0,0,0.15)] transition-all">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="mb-2 flex items-center gap-3">
+                        <h3 className="text-[14px]">{proof.projectName ?? proof.project_name}</h3>
+                        {proof.relevance != null && (
                           <div className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-mono text-blue-700">
                             {Math.round(proof.relevance * 100)}% match
                           </div>
-                        </div>
-                        <div className="flex items-center gap-4">
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4">
+                        {proof.cai != null && (
                           <div className="flex items-baseline gap-1.5">
                             <span className="text-[11px] uppercase tracking-wider text-[#717182]">CAI</span>
                             <span className="font-mono text-[15px]" style={{ color: 'var(--score-cai)' }}>
                               {proof.cai}
                             </span>
                           </div>
+                        )}
+                        {proof.hls != null && (
                           <div className="flex items-baseline gap-1.5">
                             <span className="text-[11px] uppercase tracking-wider text-[#717182]">HLS</span>
                             <span className="font-mono text-[15px]" style={{ color: 'var(--score-hls)' }}>
                               {proof.hls}
                             </span>
                           </div>
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        View Proof Page
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="conversations" className="space-y-3">
-            {mockSearchResults.conversations.map((conv) => (
-              <Card key={conv.id} className="border border-[rgba(0,0,0,0.08)] bg-white p-5 shadow-sm hover:border-[rgba(0,0,0,0.15)] transition-all">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="mb-1 flex items-center gap-3">
-                      <h3 className="text-[14px]">{conv.title}</h3>
-                      <div className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-mono text-blue-700">
-                        {Math.round(conv.relevance * 100)}% match
+                        )}
                       </div>
                     </div>
-                    <p className="mb-2 text-[13px] text-[#717182] italic">{conv.snippet}</p>
-                    <Badge variant="secondary" className="bg-[#F5F5F7]">
-                      {conv.project}
-                    </Badge>
+                    <Button variant="outline" size="sm">
+                      View Proof Page
+                    </Button>
                   </div>
-                  <Button variant="outline" size="sm">
-                    View Conversation
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </TabsContent>
-
-          <TabsContent value="projects" className="space-y-3">
-            {mockSearchResults.projects.map((project) => (
-              <Card key={project.id} className="border border-[rgba(0,0,0,0.08)] bg-white p-5 shadow-sm hover:border-[rgba(0,0,0,0.15)] transition-all">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="mb-1 flex items-center gap-3">
-                      <h3 className="text-[14px]">{project.name}</h3>
-                      <div className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-mono text-blue-700">
-                        {Math.round(project.relevance * 100)}% match
-                      </div>
-                    </div>
-                    <p className="mb-2 text-[13px] text-[#717182]">{project.description}</p>
-                    <div className="text-[13px] text-[#717182]">
-                      {project.conversationCount} conversations
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    View Project
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </TabsContent>
-
-          <TabsContent value="proofs" className="space-y-3">
-            {mockSearchResults.proofPages.map((proof) => (
-              <Card key={proof.id} className="border border-[rgba(0,0,0,0.08)] bg-white p-5 shadow-sm hover:border-[rgba(0,0,0,0.15)] transition-all">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="mb-2 flex items-center gap-3">
-                      <h3 className="text-[14px]">{proof.projectName}</h3>
-                      <div className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-mono text-blue-700">
-                        {Math.round(proof.relevance * 100)}% match
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-[11px] uppercase tracking-wider text-[#717182]">CAI</span>
-                        <span className="font-mono text-[15px]" style={{ color: 'var(--score-cai)' }}>
-                          {proof.cai}
-                        </span>
-                      </div>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-[11px] uppercase tracking-wider text-[#717182]">HLS</span>
-                        <span className="font-mono text-[15px]" style={{ color: 'var(--score-hls)' }}>
-                          {proof.hls}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    View Proof Page
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </TabsContent>
-        </Tabs>
+                </Card>
+              ))}
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
     </div>
   );
