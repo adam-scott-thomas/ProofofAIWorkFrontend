@@ -10,12 +10,11 @@ import { useProjects, useConversations } from "../../hooks/useApi";
 export default function Projects() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [hasAISorted, setHasAISorted] = useState(false);
 
   const { data: projectsData, isLoading: projectsLoading } = useProjects();
   const { data: convsData, isLoading: convsLoading } = useConversations();
 
-  const isLoading = hasAISorted ? projectsLoading : convsLoading;
+  const isLoading = projectsLoading || convsLoading;
 
   if (isLoading) return (
     <div className="flex min-h-screen items-center justify-center text-[13px] text-[#717182]">Loading...</div>
@@ -23,6 +22,9 @@ export default function Projects() {
 
   const projects = Array.isArray(projectsData) ? projectsData : projectsData?.data ?? projectsData?.items ?? [];
   const conversations = Array.isArray(convsData) ? convsData : convsData?.data ?? convsData?.items ?? [];
+
+  // Derive hasAISorted from real data: user has at least one project
+  const hasAISorted = projects.length > 0;
 
   return (
     <div className="min-h-screen">
@@ -161,7 +163,7 @@ export default function Projects() {
       <PaymentModal
         open={paymentModalOpen}
         onOpenChange={setPaymentModalOpen}
-        onComplete={() => setHasAISorted(true)}
+        onComplete={() => {}}
       />
     </div>
   );
