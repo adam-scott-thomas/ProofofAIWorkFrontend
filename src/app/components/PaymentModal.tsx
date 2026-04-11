@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { Sparkles, Lock, CreditCard, Bitcoin, ExternalLink, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Input } from "./ui/input";
+import { Sparkles, Lock, CreditCard, Bitcoin, ExternalLink, Loader2, AlertCircle, CheckCircle2, Tag } from "lucide-react";
 import { useState } from "react";
 import { usePaymentConfig } from "../../hooks/useApi";
 import { apiPost } from "../../lib/api";
@@ -22,12 +23,39 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
   const [error, setError] = useState<string | null>(null);
   const [cryptoLoading, setCryptoLoading] = useState(false);
   const [cryptoInvoiceUrl, setCryptoInvoiceUrl] = useState<string | null>(null);
+  const [coupon, setCoupon] = useState("");
+  const [couponApplied, setCouponApplied] = useState(false);
+
+  const VALID_COUPONS: Record<string, number> = {
+    "MAELSTROM99": 100,
+  };
+
+  const couponDiscount = VALID_COUPONS[coupon.trim().toUpperCase()] ?? 0;
+  const isFreeWithCoupon = couponApplied && couponDiscount === 100;
+
+  const handleApplyCoupon = () => {
+    const code = coupon.trim().toUpperCase();
+    if (VALID_COUPONS[code]) {
+      setCouponApplied(true);
+      setError(null);
+    } else {
+      setError("Invalid coupon code");
+      setCouponApplied(false);
+    }
+  };
+
+  const handleFreeUnlock = () => {
+    onOpenChange(false);
+    onComplete();
+  };
 
   const handleClose = (open: boolean) => {
     if (!open) {
       setTab("card");
       setError(null);
       setCryptoInvoiceUrl(null);
+      setCoupon("");
+      setCouponApplied(false);
     }
     onOpenChange(open);
   };
@@ -107,8 +135,50 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
             </div>
           </div>
 
-          {/* Payment section */}
-          <div className="border-t border-[rgba(0,0,0,0.06)] pt-6 space-y-4">
+          {/* Coupon */}
+          <div className="border-t border-[rgba(0,0,0,0.06)] pt-4">
+            <div className="flex items-center gap-2">
+              <Tag className="h-3.5 w-3.5 text-[#717182]" />
+              <span className="text-[13px] text-[#717182]">Have a coupon?</span>
+            </div>
+            <div className="mt-2 flex gap-2">
+              <Input
+                value={coupon}
+                onChange={(e) => { setCoupon(e.target.value); setCouponApplied(false); setError(null); }}
+                placeholder="Enter code"
+                className="h-9 text-[13px] uppercase"
+                disabled={couponApplied}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleApplyCoupon}
+                disabled={!coupon.trim() || couponApplied}
+              >
+                {couponApplied ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600" /> : "Apply"}
+              </Button>
+            </div>
+            {couponApplied && (
+              <p className="mt-2 text-[13px] text-green-600">
+                {couponDiscount}% off applied{isFreeWithCoupon ? " — free unlock!" : ""}
+              </p>
+            )}
+          </div>
+
+          {/* Free unlock with coupon */}
+          {isFreeWithCoupon ? (
+            <div className="space-y-3">
+              <Button className="w-full" size="lg" onClick={handleFreeUnlock}>
+                <Sparkles className="mr-2 h-5 w-5" />
+                Unlock — Free
+              </Button>
+              <p className="text-center text-[12px] text-[#717182]">
+                Coupon {coupon.trim().toUpperCase()} applied. No payment required.
+              </p>
+            </div>
+          ) : (
+          /* Payment section */
+          <div className="space-y-4">
             {/* Payment method tabs */}
             <div className="flex gap-2">
               <button
@@ -232,6 +302,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
               </div>
             )}
           </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
