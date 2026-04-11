@@ -3,7 +3,9 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Progress } from "../components/ui/progress";
+import { Link, useNavigate } from "react-router";
 import { useAssessments } from "../../hooks/useApi";
+import { toast } from "sonner";
 
 function StatusBadge({ status, progress }: { status: string; progress?: number }) {
   if (status === "completed") {
@@ -34,6 +36,7 @@ function StatusBadge({ status, progress }: { status: string; progress?: number }
 }
 
 export default function Assessments() {
+  const navigate = useNavigate();
   const { data: assessmentsData, isLoading } = useAssessments();
 
   if (isLoading) return (
@@ -57,7 +60,7 @@ export default function Assessments() {
                 Run forensic evaluations to generate AI Work Profile scores
               </p>
             </div>
-            <Button>
+            <Button onClick={() => navigate("/app/projects")}>
               <Plus className="mr-2 h-4 w-4" />
               New Assessment
             </Button>
@@ -149,9 +152,11 @@ export default function Assessments() {
                           </div>
 
                           <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm">
-                              View Results
-                            </Button>
+                            <Link to={`/app/assessment/${assessment.id}/results`}>
+                              <Button variant="outline" size="sm">
+                                View Results
+                              </Button>
+                            </Link>
                             <ChevronRight className="h-4 w-4 text-[#717182]" />
                           </div>
                         </div>
@@ -218,7 +223,7 @@ export default function Assessments() {
 
                           <div className="flex items-center gap-2">
                             {assessment.status === "failed" && (
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" onClick={() => toast.info("Retry: go to the project and run assessment again")}>
                                 <RotateCw className="mr-2 h-4 w-4" />
                                 Retry
                               </Button>
@@ -229,9 +234,11 @@ export default function Assessments() {
                               </Button>
                             )}
                             {assessment.status === "completed" && assessment.confidence === "low" && (
-                              <Button variant="outline" size="sm">
-                                View Anyway
-                              </Button>
+                              <Link to={`/app/assessment/${assessment.id}/results`}>
+                                <Button variant="outline" size="sm">
+                                  View Anyway
+                                </Button>
+                              </Link>
                             )}
                           </div>
                         </div>
