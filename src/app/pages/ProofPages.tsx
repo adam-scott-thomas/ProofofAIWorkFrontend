@@ -3,10 +3,11 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useState } from "react";
 import { ShareDialog } from "../components/ShareDialog";
-import { useProofPages } from "../../hooks/useApi";
+import { useProofPages, usePublishProofPage } from "../../hooks/useApi";
+import { toast } from "sonner";
 
 type ViewMode = "my-proofs" | "directory";
 
@@ -16,8 +17,10 @@ export default function ProofPages() {
   const [sortBy, setSortBy] = useState<"recent" | "level" | "proofs">("recent");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [selectedProof, setSelectedProof] = useState<any>(null);
+  const navigate = useNavigate();
 
   const { data: pagesData, isLoading } = useProofPages();
+  const publishMutation = usePublishProofPage();
 
   if (isLoading) return (
     <div className="flex min-h-screen items-center justify-center text-[13px] text-[#717182]">Loading...</div>
@@ -82,7 +85,7 @@ export default function ProofPages() {
                 </button>
               </div>
               {viewMode === "my-proofs" && (
-                <Button>
+                <Button onClick={() => toast.info("Create a Proof Page from a project — go to Projects and run an assessment first")}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create Proof Page
                 </Button>
@@ -155,7 +158,15 @@ export default function ProofPages() {
                                     <span className="font-mono text-[12px] text-[#717182]">
                                       proofofaiwork.com/p/{page.slug}
                                     </span>
-                                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-5 w-5 p-0"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(`https://proofofaiwork.com/p/${page.slug}`);
+                                        toast.success("URL copied to clipboard");
+                                      }}
+                                    >
                                       <Copy className="h-3 w-3" />
                                     </Button>
                                   </div>
@@ -197,10 +208,18 @@ export default function ProofPages() {
                                 <Button variant="ghost" size="sm" onClick={() => handleShare(page)}>
                                   <Share2 className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const url = `https://proofofaiwork.com/p/${page.slug ?? page.id}`;
+                                    navigator.clipboard.writeText(url);
+                                    toast.success("URL copied to clipboard");
+                                  }}
+                                >
                                   <Copy className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm">
+                                <Button variant="ghost" size="sm" onClick={() => toast.info("More options coming soon")}>
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -262,14 +281,25 @@ export default function ProofPages() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Button variant="outline" size="sm">
-                                Preview
-                              </Button>
-                              <Button size="sm">
+                              <Link to={`/p/${page.slug ?? page.id}`}>
+                                <Button variant="outline" size="sm">
+                                  Preview
+                                </Button>
+                              </Link>
+                              <Button
+                                size="sm"
+                                disabled={publishMutation.isPending}
+                                onClick={() => {
+                                  publishMutation.mutate(page.id, {
+                                    onSuccess: () => toast.success("Proof page published!"),
+                                    onError: (err: any) => toast.error(err?.message ?? "Failed to publish"),
+                                  });
+                                }}
+                              >
                                 <Globe className="mr-2 h-4 w-4" />
-                                Publish
+                                {publishMutation.isPending ? "Publishing…" : "Publish"}
                               </Button>
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" onClick={() => toast.info("More options coming soon")}>
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
                             </div>
