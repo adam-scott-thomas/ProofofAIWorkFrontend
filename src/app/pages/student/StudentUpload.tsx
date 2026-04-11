@@ -1,21 +1,62 @@
-import { Upload, FileText, Sparkles } from "lucide-react";
+import { Upload, FileText, Sparkles, AlertCircle } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router";
+import { useDirectUpload } from "../../../hooks/useApi";
 
 export default function StudentUpload() {
-  const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
+  const [file, setFile] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadMutation = useDirectUpload();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0];
+    if (selected) {
+      setFile(selected);
+      setUploadError(null);
+    }
+  };
 
   const handleUpload = () => {
-    setUploading(true);
-    // Simulate upload
-    setTimeout(() => {
-      setUploading(false);
-      navigate("/student/analyze");
-    }, 2000);
+    if (!file) {
+      // Open file picker if no file selected yet
+      fileInputRef.current?.click();
+      return;
+    }
+
+    setUploadError(null);
+    uploadMutation.mutate(
+      { files: [file] },
+      {
+        onSuccess: (result: any) => {
+          const id: string =
+            result?.assessment_id ??
+            result?.assessmentId ??
+            result?.id ??
+            null;
+          if (id) {
+            navigate(`/student/analyze?id=${id}`);
+          } else {
+            // No id from server — navigate anyway so polling can discover it
+            navigate("/student/analyze");
+          }
+        },
+        onError: (err: any) => {
+          const msg =
+            err?.message ??
+            err?.detail ??
+            "Upload failed. Please try again.";
+          setUploadError(msg);
+        },
+      }
+    );
   };
+
+  const uploading = uploadMutation.isPending;
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-8">
@@ -43,6 +84,40 @@ export default function StudentUpload() {
             ChatGPT exports, Claude conversations, or any AI chat logs
           </p>
 
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,.txt,.md,.markdown"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+
+          {/* File selected indicator */}
+          {file && (
+            <div className="mb-4 flex items-center justify-center gap-2 text-[14px] text-[#030213]">
+              <FileText className="h-4 w-4 text-[#717182]" />
+              <span>{file.name}</span>
+              <button
+                className="ml-1 text-[#717182] hover:text-[#030213]"
+                onClick={() => {
+                  setFile(null);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          {/* Error message */}
+          {uploadError && (
+            <div className="mb-4 flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <span>{uploadError}</span>
+            </div>
+          )}
+
           <div className="mb-6">
             <Button
               size="lg"
@@ -53,7 +128,12 @@ export default function StudentUpload() {
               {uploading ? (
                 <>
                   <Sparkles className="mr-2 h-5 w-5 animate-pulse" />
-                  Analyzing...
+                  Uploading...
+                </>
+              ) : file ? (
+                <>
+                  <Sparkles className="mr-2 h-5 w-5" />
+                  Analyze My Work Style
                 </>
               ) : (
                 <>
