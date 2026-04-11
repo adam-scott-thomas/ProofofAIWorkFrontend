@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useId } from "react";
 import { Button } from "./ui/button";
 import { Loader2, AlertCircle } from "lucide-react";
 
@@ -24,6 +24,7 @@ export default function SquarePaymentForm({
   const [ready, setReady] = useState(false);
   const [tokenizing, setTokenizing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const containerId = useId().replace(/:/g, "-");
 
   useEffect(() => {
     let cancelled = false;
@@ -34,6 +35,13 @@ export default function SquarePaymentForm({
         return;
       }
 
+      // Wait for the container to be in the DOM
+      const el = document.getElementById(`sq-card-${containerId}`);
+      if (!el) {
+        setError("Card container not found");
+        return;
+      }
+
       try {
         const payments = await window.Square.payments(appId, locationId);
         const card = await payments.card();
@@ -41,7 +49,7 @@ export default function SquarePaymentForm({
           card.destroy();
           return;
         }
-        await card.attach("#sq-card-container");
+        await card.attach(`#sq-card-${containerId}`);
         cardRef.current = card;
         setReady(true);
       } catch (e: any) {
@@ -49,14 +57,16 @@ export default function SquarePaymentForm({
       }
     }
 
-    init();
+    // Small delay to ensure DOM is ready after dialog animation
+    const timer = setTimeout(init, 100);
 
     return () => {
       cancelled = true;
+      clearTimeout(timer);
       cardRef.current?.destroy();
       cardRef.current = null;
     };
-  }, [appId, locationId]);
+  }, [appId, locationId, containerId]);
 
   const handleSubmit = useCallback(async () => {
     if (!cardRef.current) return;
@@ -83,7 +93,7 @@ export default function SquarePaymentForm({
   return (
     <div className="space-y-4">
       <div
-        id="sq-card-container"
+        id={`sq-card-${containerId}`}
         ref={containerRef}
         className="min-h-[44px] rounded-md border border-[rgba(0,0,0,0.12)] bg-white p-1"
       />
