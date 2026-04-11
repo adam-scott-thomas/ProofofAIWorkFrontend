@@ -252,9 +252,12 @@ export const useDirectUpload = () => {
       const isSingle = fileArray.length === 1;
 
       // Step 1: presign
+      const firstFile = fileArray[0];
+      const ext = firstFile.name.includes(".") ? firstFile.name.split(".").pop()! : "txt";
       const presignRes = await apiPost<any>("/uploads/presign", {
-        filename: isSingle ? fileArray[0].name : fileArray.map((f) => f.name),
-        content_type: isSingle ? fileArray[0].type : fileArray.map((f) => f.type),
+        file_name: firstFile.name,
+        file_type: ext,
+        file_size_bytes: firstFile.size,
         ...metadata,
       });
       const uploadId: string = presignRes.upload_id;
@@ -263,17 +266,19 @@ export const useDirectUpload = () => {
       const token = localStorage.getItem("poaw-token");
       const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
 
-      // Step 2: PUT file(s)
+      // Step 2: PUT file(s) — FastAPI expects multipart form data
       if (isSingle) {
-        await fetch(`${apiBase}/uploads/${uploadId}/file`, {
+        const formData = new FormData();
+        formData.append("file", fileArray[0]);
+        await fetch(`${apiBase}/api/v1/uploads/${uploadId}/file`, {
           method: "PUT",
-          headers: { "Content-Type": fileArray[0].type, ...authHeader },
-          body: fileArray[0],
+          headers: { ...authHeader },
+          body: formData,
         });
       } else {
         const formData = new FormData();
         fileArray.forEach((f) => formData.append("files", f));
-        await fetch(`${apiBase}/uploads/${uploadId}/files`, {
+        await fetch(`${apiBase}/api/v1/uploads/${uploadId}/files`, {
           method: "PUT",
           headers: { ...authHeader },
           body: formData,
