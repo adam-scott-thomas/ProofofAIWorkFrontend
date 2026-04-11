@@ -50,11 +50,11 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
     setUnlocking(true);
     setError(null);
     try {
-      await apiPost("/projects/ai-cluster", {});
+      // Fire and forget — don't block the UI waiting for LLM clustering
+      apiPost("/projects/ai-cluster", {}).catch(() => {});
+      // Close immediately and let the dashboard refresh
       onOpenChange(false);
       onComplete();
-    } catch (e: any) {
-      setError(e.message || "AI Sort failed. Please try again.");
     } finally {
       setUnlocking(false);
     }
@@ -80,10 +80,13 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
     setCardLoading(true);
     try {
       await apiPost("/payments/ai-sort", { source_id: sourceId });
-      // Payment succeeded — now run AI clustering
-      await runAiSort();
+      // Payment succeeded — fire clustering async and close
+      apiPost("/projects/ai-cluster", {}).catch(() => {});
+      onOpenChange(false);
+      onComplete();
     } catch (e: any) {
       setError(e.message || "Payment failed. Please try again.");
+    } finally {
       setCardLoading(false);
     }
   };
