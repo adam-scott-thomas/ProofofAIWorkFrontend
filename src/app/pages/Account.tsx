@@ -134,7 +134,7 @@ export default function Account() {
                   <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
                     Connected
                   </Badge>
-                  <Button variant="outline" size="sm">Configure</Button>
+                  <Button variant="outline" size="sm" onClick={() => toast.info("Claude configuration coming soon")}>Configure</Button>
                 </div>
               </div>
               <Separator />
@@ -143,7 +143,7 @@ export default function Account() {
                   <div className="mb-1 text-[14px]">ChatGPT (OpenAI)</div>
                   <div className="text-[13px] text-[#717182]">Import conversations from ChatGPT</div>
                 </div>
-                <Button variant="outline" size="sm">Connect</Button>
+                <Button variant="outline" size="sm" onClick={() => toast.info("ChatGPT connection coming soon")}>Connect</Button>
               </div>
               <Separator />
               <div className="flex items-center justify-between">
@@ -155,7 +155,7 @@ export default function Account() {
                   <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
                     Connected
                   </Badge>
-                  <Button variant="outline" size="sm">Configure</Button>
+                  <Button variant="outline" size="sm" onClick={() => toast.info("GitHub configuration coming soon")}>Configure</Button>
                 </div>
               </div>
             </div>
@@ -168,7 +168,7 @@ export default function Account() {
                 <Key className="h-5 w-5 text-[#717182]" />
                 <h2 className="text-[15px]">API Keys</h2>
               </div>
-              <Button variant="outline" size="sm">Generate New Key</Button>
+              <Button variant="outline" size="sm" onClick={() => toast.info("API key generation coming soon")}>Generate New Key</Button>
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between rounded-md border border-[rgba(0,0,0,0.08)] bg-[#FAFAFA] p-4">
@@ -176,7 +176,7 @@ export default function Account() {
                   <div className="mb-1 font-mono text-[13px]">poaw_live_••••••••••••3x7k</div>
                   <div className="text-[12px] text-[#717182]">Created Mar 15, 2026 • Last used 2 hours ago</div>
                 </div>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={() => toast.info("API key deletion coming soon")}>
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
@@ -228,11 +228,11 @@ export default function Account() {
                   <div className="mb-1 text-[14px]">Default Proof Page Visibility</div>
                   <div className="text-[13px] text-[#717182]">Set default visibility for new proof pages</div>
                 </div>
-                <Button variant="outline" size="sm">Private</Button>
+                <Button variant="outline" size="sm" onClick={() => toast.info("Visibility settings coming soon")}>Private</Button>
               </div>
               <Separator />
               <div>
-                <Button variant="outline" size="sm">Export All Data</Button>
+                <Button variant="outline" size="sm" onClick={() => toast.info("Data export coming soon")}>Export All Data</Button>
                 <p className="mt-2 text-[12px] text-[#717182]">
                   Download all your conversations, assessments, and proof pages
                 </p>
@@ -254,7 +254,7 @@ export default function Account() {
                     Permanently delete your account and all associated data
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="border-red-300 text-red-700 hover:bg-red-100">
+                <Button variant="outline" size="sm" className="border-red-300 text-red-700 hover:bg-red-100" onClick={() => toast.info("Account deletion coming soon — contact support to delete your account")}>
                   Delete Account
                 </Button>
               </div>
