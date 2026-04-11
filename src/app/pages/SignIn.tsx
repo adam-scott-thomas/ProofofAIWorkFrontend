@@ -30,7 +30,7 @@ export default function SignIn() {
   // Where to redirect after auth
   const nextUrl = searchParams.get("next")
     || (location.state as any)?.from?.pathname
-    || "/dashboard";
+    || "/app";
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -42,7 +42,7 @@ export default function SignIn() {
     e.preventDefault();
     try {
       // Store redirect target so AuthCallback can pick it up after the email roundtrip
-      if (nextUrl !== "/dashboard") {
+      if (nextUrl !== "/app") {
         localStorage.setItem("poaw-auth-redirect", nextUrl);
       }
       await requestMagicLink.mutateAsync({ email });

@@ -35,7 +35,7 @@ export default function AuthCallback() {
   const getRedirectTarget = () => {
     const stored = localStorage.getItem("poaw-auth-redirect");
     localStorage.removeItem("poaw-auth-redirect");
-    return stored || "/dashboard";
+    return stored || "/app";
   };
 
   useEffect(() => {
