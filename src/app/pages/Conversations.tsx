@@ -6,6 +6,7 @@ import { Input } from "../components/ui/input";
 import { Link } from "react-router";
 import { useState } from "react";
 import { useConversations } from "../../hooks/useApi";
+import { toast } from "sonner";
 
 export default function Conversations() {
   const [viewMode, setViewMode] = useState<"raw" | "organized">("raw");
@@ -60,11 +61,11 @@ export default function Conversations() {
                   AI Organized
                 </Button>
               </div>
-              <Button variant="outline">
+              <Button variant="outline" onClick={() => toast.info("Filters coming soon")}>
                 <Filter className="mr-2 h-4 w-4" />
                 Filters
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={() => toast.info("Date range filter coming soon")}>
                 <Calendar className="mr-2 h-4 w-4" />
                 Date Range
               </Button>

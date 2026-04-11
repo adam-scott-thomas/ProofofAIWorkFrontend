@@ -2,8 +2,9 @@ import { ArrowRight, TrendingUp, Clock, MessageSquare, FolderKanban, CheckCircle
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { ShareDialog } from "../components/ShareDialog";
 import { PaymentModal } from "../components/PaymentModal";
@@ -34,6 +35,7 @@ export default function Dashboard() {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Real API data
   const { data: user, isLoading: userLoading } = useCurrentUser();
@@ -109,11 +111,11 @@ export default function Dashboard() {
               )}
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => toast.info("Coming soon")}>
                 <AlertCircle className="mr-2 h-4 w-4" />
                 Disputes
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => toast.info("Coming soon")}>
                 <Webhook className="mr-2 h-4 w-4" />
                 System
               </Button>
@@ -397,7 +399,7 @@ export default function Dashboard() {
               )}
             </div>
             <div className="border-t border-[rgba(0,0,0,0.06)] px-6 py-3">
-              <Button variant="ghost" size="sm" className="w-full">
+              <Button variant="ghost" size="sm" className="w-full" onClick={() => navigate("/app/conversations")}>
                 View All Activity
               </Button>
             </div>

@@ -4,6 +4,7 @@ import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Link, useParams } from "react-router";
 import { useConversation } from "../../hooks/useApi";
+import { toast } from "sonner";
 
 export default function ConversationDetail() {
   const { id } = useParams<{ id: string }>();
@@ -55,15 +56,23 @@ export default function ConversationDetail() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const text = turns.map((t: any) => `${t.role === 'user' ? 'You' : 'Assistant'}: ${t.content ?? t.text ?? ""}`).join("\n\n");
+                  navigator.clipboard.writeText(text);
+                  toast.success("Conversation copied to clipboard");
+                }}
+              >
                 <Copy className="mr-2 h-4 w-4" />
                 Copy
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => toast.info("Export coming soon")}>
                 <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => toast.info("More options coming soon")}>
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </div>
@@ -83,7 +92,7 @@ export default function ConversationDetail() {
                     {tag}
                   </Badge>
                 ))}
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px]">
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => toast.info("Tag editing coming soon")}>
                   + Add tag
                 </Button>
               </div>
@@ -154,11 +163,20 @@ export default function ConversationDetail() {
                 <div className={`mt-2 flex gap-2 ${turn.role === 'assistant' ? 'flex-row-reverse' : ''}`}>
                   <div className="w-24 flex-shrink-0" />
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-[11px]">
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-[11px]" onClick={() => toast.info("Turn tagging coming soon")}>
                       <Tag className="mr-1 h-3 w-3" />
                       Tag turn
                     </Button>
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-[11px]">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-[11px]"
+                      onClick={() => {
+                        const text = turn.content ?? turn.text ?? "";
+                        navigator.clipboard.writeText(text);
+                        toast.success("Copied to clipboard");
+                      }}
+                    >
                       <Copy className="mr-1 h-3 w-3" />
                       Copy
                     </Button>
