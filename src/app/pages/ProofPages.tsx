@@ -138,7 +138,7 @@ export default function ProofPages() {
                             <div className="flex items-start justify-between gap-6">
                               <div className="flex-1">
                                 <div className="mb-2 flex items-center gap-3">
-                                  <Link to={`/proof-pages/${page.id}`} className="text-[14px] hover:underline">
+                                  <Link to={`/p/${page.slug ?? page.id}`} className="text-[14px] hover:underline">
                                     {page.title ?? page.project_name ?? page.id}
                                   </Link>
                                   <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
@@ -227,7 +227,7 @@ export default function ProofPages() {
                           <div className="flex items-start justify-between gap-6">
                             <div className="flex-1">
                               <div className="mb-2 flex items-center gap-3">
-                                <Link to={`/proof-pages/${page.id}`} className="text-[14px] hover:underline">
+                                <Link to={`/p/${page.slug ?? page.id}`} className="text-[14px] hover:underline">
                                   {page.title ?? page.project_name ?? page.id}
                                 </Link>
                                 <Badge variant="secondary" className="bg-[#F5F5F7] text-[#717182]">
