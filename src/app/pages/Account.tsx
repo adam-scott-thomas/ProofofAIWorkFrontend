@@ -6,8 +6,44 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Separator } from "../components/ui/separator";
 import { Switch } from "../components/ui/switch";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { useCurrentUser, useUpdateProfile } from "../../hooks/useApi";
 
 export default function Account() {
+  const { data: user, isLoading: userLoading } = useCurrentUser();
+  const updateProfile = useUpdateProfile();
+
+  const [formData, setFormData] = useState({
+    name: "",
+    handle: "",
+    email: "",
+    bio: "",
+  });
+
+  // Populate form once user data arrives
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name ?? user.full_name ?? "",
+        handle: user.handle ?? user.username ?? "",
+        email: user.email ?? "",
+        bio: user.bio ?? "",
+      });
+    }
+  }, [user]);
+
+  const handleSave = () => {
+    updateProfile.mutate(formData, {
+      onSuccess: () => {
+        toast.success("Profile saved successfully");
+      },
+      onError: () => {
+        toast.error("Failed to save profile");
+      },
+    });
+  };
+
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -29,31 +65,56 @@ export default function Account() {
               <h2 className="text-[15px]">Profile</h2>
             </div>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" defaultValue="Alex Chen" className="mt-1.5" />
-                </div>
-                <div>
-                  <Label htmlFor="handle">Handle</Label>
-                  <Input id="handle" defaultValue="@alexchen" className="mt-1.5" />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue="alex@example.com" className="mt-1.5" />
-              </div>
-              <div>
-                <Label htmlFor="bio">Bio</Label>
-                <Input 
-                  id="bio" 
-                  defaultValue="Software architect specializing in distributed systems" 
-                  className="mt-1.5" 
-                />
-              </div>
-              <div className="flex justify-end">
-                <Button>Save Changes</Button>
-              </div>
+              {userLoading ? (
+                <div className="text-[13px] text-[#717182]">Loading profile...</div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="name">Full Name</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="mt-1.5"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="handle">Handle</Label>
+                      <Input
+                        id="handle"
+                        value={formData.handle}
+                        onChange={(e) => setFormData({ ...formData, handle: e.target.value })}
+                        className="mt-1.5"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bio">Bio</Label>
+                    <Input
+                      id="bio"
+                      value={formData.bio}
+                      onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <Button onClick={handleSave} disabled={updateProfile.isPending}>
+                      {updateProfile.isPending ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </Card>
 
