@@ -1,15 +1,19 @@
-import { Plus, FolderKanban, Sparkles, ChevronRight } from "lucide-react";
+import { Plus, FolderKanban, Sparkles, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Link } from "react-router";
 import { useState } from "react";
 import { CreateProjectDialog } from "../components/CreateProjectDialog";
 import { PaymentModal } from "../components/PaymentModal";
-import { useProjects, useConversations } from "../../hooks/useApi";
+import { useProjects, useConversations, useTriggerClustering } from "../../hooks/useApi";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export default function Projects() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const qc = useQueryClient();
+  const clusterMutation = useTriggerClustering();
 
   const { data: projectsData, isLoading: projectsLoading } = useProjects();
   const { data: convsData, isLoading: convsLoading } = useConversations();
@@ -95,7 +99,7 @@ export default function Projects() {
               <div className="mt-6 flex items-center justify-center">
                 <Button size="lg" onClick={() => setPaymentModalOpen(true)}>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Run AI Sort — $7
+                  Run AI Sort — $5
                 </Button>
               </div>
             </div>
@@ -114,7 +118,28 @@ export default function Projects() {
 
               {projects.length === 0 ? (
                 <Card className="border border-[rgba(0,0,0,0.08)] bg-white p-8 text-center shadow-sm">
-                  <p className="text-[13px] text-[#717182]">No projects yet. Create one to get started.</p>
+                  <p className="mb-4 text-[13px] text-[#717182]">No projects yet. Create one manually or run free clustering.</p>
+                  <Button
+                    variant="outline"
+                    disabled={clusterMutation.isPending}
+                    onClick={() => {
+                      clusterMutation.mutate(undefined, {
+                        onSuccess: (data: any) => {
+                          const n = data?.projects?.length ?? data?.project_count ?? 0;
+                          toast.success(`Clustering complete — ${n} project${n !== 1 ? "s" : ""} created`);
+                          qc.invalidateQueries({ queryKey: ["projects"] });
+                          qc.invalidateQueries({ queryKey: ["pool"] });
+                        },
+                        onError: (err: any) => toast.error(err?.message ?? "Clustering failed"),
+                      });
+                    }}
+                  >
+                    {clusterMutation.isPending ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Clustering...</>
+                    ) : (
+                      <>Run Free Clustering</>
+                    )}
+                  </Button>
                 </Card>
               ) : (
                 <div className="space-y-4">
