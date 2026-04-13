@@ -61,7 +61,7 @@ export default function PublicProfile() {
 
   if (notFound || !profile) {
     return (
-      <div className="min-h-screen bg-[#FAFAFA]">
+      <div className="not-dark min-h-screen bg-[#FAFAFA]">
         <div className="mx-auto max-w-3xl px-8 py-16 text-center">
           <h1 className="mb-4 text-4xl tracking-tight">Profile not found</h1>
           <p className="mb-8 text-[15px] text-[#717182]">

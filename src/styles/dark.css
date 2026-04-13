@@ -1,0 +1,193 @@
+/* ============================================================================
+   Dark theme override — targets existing Tailwind arbitrary values
+   Applied under <html class="dark">. Public pages opt-out via class="not-dark"
+   on an ancestor.
+   ============================================================================ */
+
+html.dark {
+  color-scheme: dark;
+  background: #09090b;
+}
+
+html.dark body {
+  background: #09090b;
+  color: #e4e4e7;
+}
+
+/* --- Surfaces --- */
+html.dark .bg-white,
+html.dark .bg-\[\#FAFAFA\],
+html.dark .bg-\[\#F5F5F7\],
+html.dark .bg-\[\#F3F3F5\] {
+  background-color: #0f0f12 !important;
+}
+
+/* Slightly raised surfaces (nested cards, inputs) */
+html.dark .bg-\[\#ececf0\],
+html.dark .bg-\[\#e9ebef\],
+html.dark .bg-gray-50,
+html.dark .bg-gray-100 {
+  background-color: #161619 !important;
+}
+
+/* Muted panels */
+html.dark .bg-\[#FAFAFA\] {
+  background-color: #0c0c0f !important;
+}
+
+/* --- Text --- */
+html.dark .text-\[\#030213\] {
+  color: #fafafa !important;
+}
+html.dark .text-\[\#3A3A3A\] {
+  color: #d4d4d8 !important;
+}
+html.dark .text-\[\#717182\] {
+  color: #a1a1aa !important;
+}
+html.dark .text-\[\#C0C0C5\] {
+  color: #71717a !important;
+}
+html.dark .text-gray-400,
+html.dark .text-gray-500,
+html.dark .text-gray-600 {
+  color: #a1a1aa !important;
+}
+html.dark .text-gray-700,
+html.dark .text-gray-900 {
+  color: #e4e4e7 !important;
+}
+
+/* --- Borders --- */
+html.dark .border-\[rgba\(0\,0\,0\,0\.04\)\] {
+  border-color: rgba(255, 255, 255, 0.04) !important;
+}
+html.dark .border-\[rgba\(0\,0\,0\,0\.06\)\] {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+html.dark .border-\[rgba\(0\,0\,0\,0\.08\)\] {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark .border-\[rgba\(0\,0\,0\,0\.12\)\] {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+html.dark .border-\[rgba\(0\,0\,0\,0\.15\)\] {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+html.dark .border-\[rgba\(0\,0\,0\,0\.24\)\] {
+  border-color: rgba(255, 255, 255, 0.20) !important;
+}
+html.dark .border-gray-200,
+html.dark .border-gray-300 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* --- Divide lines --- */
+html.dark .divide-\[rgba\(0\,0\,0\,0\.04\)\] > :not(:last-child) {
+  border-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* --- Input fields --- */
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #161619 !important;
+  color: #e4e4e7 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #71717a !important;
+}
+
+/* --- Soft pastel backgrounds flip to dark-tinted --- */
+html.dark .bg-green-50     { background-color: rgba(16, 185, 129, 0.08) !important; }
+html.dark .bg-blue-50      { background-color: rgba(59, 130, 246, 0.08) !important; }
+html.dark .bg-red-50       { background-color: rgba(239, 68, 68, 0.08) !important; }
+html.dark .bg-amber-50     { background-color: rgba(245, 158, 11, 0.08) !important; }
+html.dark .bg-emerald-50   { background-color: rgba(16, 185, 129, 0.08) !important; }
+html.dark .bg-purple-50    { background-color: rgba(168, 85, 247, 0.08) !important; }
+
+html.dark .text-green-700,
+html.dark .text-green-800  { color: #34d399 !important; }
+html.dark .text-emerald-600,
+html.dark .text-emerald-700 { color: #34d399 !important; }
+html.dark .text-blue-700,
+html.dark .text-blue-800   { color: #60a5fa !important; }
+html.dark .text-red-700,
+html.dark .text-red-800    { color: #f87171 !important; }
+html.dark .text-amber-700,
+html.dark .text-amber-800,
+html.dark .text-amber-900  { color: #fbbf24 !important; }
+
+html.dark .border-green-200,
+html.dark .border-emerald-200 { border-color: rgba(16, 185, 129, 0.25) !important; }
+html.dark .border-blue-200    { border-color: rgba(59, 130, 246, 0.25) !important; }
+html.dark .border-red-200     { border-color: rgba(239, 68, 68, 0.25) !important; }
+html.dark .border-amber-200   { border-color: rgba(245, 158, 11, 0.25) !important; }
+
+/* --- Primary button in dark = saturated accent --- */
+html.dark button[class*="bg-primary"],
+html.dark .bg-\[#030213\],
+html.dark .bg-primary {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+html.dark button[class*="bg-primary"]:hover,
+html.dark .bg-\[#030213\]:hover {
+  background-color: #3b82f6 !important;
+}
+
+/* --- Outlined buttons in dark --- */
+html.dark button[class*="variant-outline"],
+html.dark .border-input {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background-color: transparent !important;
+  color: #e4e4e7 !important;
+}
+
+/* --- Cards should lift visually --- */
+html.dark .shadow-sm,
+html.dark .shadow-md {
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+html.dark .shadow-xl,
+html.dark .shadow-2xl {
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 24px 48px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* --- Hover backgrounds --- */
+html.dark .hover\:bg-\[\#FAFAFA\]:hover,
+html.dark .hover\:bg-white:hover,
+html.dark .hover\:bg-gray-50:hover {
+  background-color: #161619 !important;
+}
+html.dark .hover\:border-\[rgba\(0\,0\,0\,0\.12\)\]:hover,
+html.dark .hover\:border-\[rgba\(0\,0\,0\,0\.2\)\]:hover,
+html.dark .hover\:border-\[rgba\(0\,0\,0\,0\.24\)\]:hover {
+  border-color: rgba(255, 255, 255, 0.20) !important;
+}
+
+/* --- Dialog / modal backdrop stays pure black --- */
+html.dark [data-slot="dialog-overlay"] {
+  background-color: rgba(0, 0, 0, 0.75) !important;
+}
+
+/* ============================================================================
+   Escape hatch: public pages inside .not-dark keep their light palette
+   ============================================================================ */
+html.dark .not-dark {
+  color-scheme: light;
+  color: #030213;
+}
+html.dark .not-dark,
+html.dark .not-dark .bg-white,
+html.dark .not-dark .bg-\[\#FAFAFA\] {
+  background-color: #FAFAFA !important;
+}
+html.dark .not-dark .text-\[\#030213\]     { color: #030213 !important; }
+html.dark .not-dark .text-\[\#3A3A3A\]     { color: #3A3A3A !important; }
+html.dark .not-dark .text-\[\#717182\]     { color: #717182 !important; }
+html.dark .not-dark .border-\[rgba\(0\,0\,0\,0\.08\)\] {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}

@@ -81,7 +81,7 @@ export default function PublicProofPage() {
   const weaknesses = scored.filter((o: any) => o.score < 0.4);
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
+    <div className="not-dark min-h-screen bg-[#FAFAFA]">
       {/* Header */}
       <header className="border-b border-[rgba(0,0,0,0.08)] bg-white">
         <div className="mx-auto max-w-3xl px-8 py-6">

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router";
+import { useParams, Link, useNavigate } from "react-router";
 import {
   CheckCircle2,
   AlertCircle,
@@ -14,6 +14,8 @@ import {
   XCircle,
   Download,
   ArrowLeft,
+  Globe,
+  Sparkles,
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiFetch, apiPost } from "../../lib/api";
@@ -51,6 +53,7 @@ function ScoreBar({ score, label }: { score: number; label: string }) {
 
 export default function Results() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [published, setPublished] = useState(false);
   const [proofUrl, setProofUrl] = useState("");
   const [copied, setCopied] = useState(false);
@@ -201,6 +204,36 @@ export default function Results() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Publish CTA — primary next step after results */}
+          <Card className="mb-6 border border-[rgba(59,130,246,0.25)] bg-white shadow-sm overflow-hidden">
+            <div className="border-l-4 border-[var(--pro-blue,#2563eb)] p-6">
+              <div className="flex items-start justify-between gap-6">
+                <div className="flex-1">
+                  <div className="mb-2 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" style={{ color: "var(--pro-blue, #2563eb)" }} />
+                    <span className="text-[11px] uppercase tracking-[0.15em] font-medium" style={{ color: "var(--pro-blue, #2563eb)" }}>
+                      Next step
+                    </span>
+                  </div>
+                  <h3 className="mb-1 text-[17px] tracking-tight text-[#030213]">
+                    Publish this as a proof page
+                  </h3>
+                  <p className="text-[13px] text-[#717182] max-w-md">
+                    Get a shareable public URL with your scores, methodology, and verification.
+                    Send it to clients, put it on your resume, pin it anywhere.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => navigate("/app/proof-pages")}
+                  className="flex-shrink-0"
+                >
+                  <Globe className="mr-2 h-4 w-4" />
+                  Publish Proof Page
+                </Button>
+              </div>
+            </div>
+          </Card>
 
           {/* Detailed scores */}
           <Card className="mb-6 border border-[rgba(0,0,0,0.08)] bg-white shadow-sm">
