@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CreditCard, Crown, Zap, CheckCircle2, Loader2, Shield, Bitcoin, ExternalLink } from "lucide-react";
+import { CreditCard, Crown, Zap, CheckCircle2, Loader2, Shield, Bitcoin, ExternalLink, Sparkles, Lock, RefreshCw, Download, Briefcase, Package } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -20,6 +20,7 @@ import {
   useCryptoStatus,
 } from "../../hooks/useApi";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import SquarePaymentForm from "../components/SquarePaymentForm";
 
 const MODEL_TIERS = [
@@ -261,15 +262,98 @@ export default function Billing() {
           )}
         </Card>
 
-        {/* Feature pricing */}
+        {/* Micro purchases */}
+        <Card className="border border-[rgba(0,0,0,0.08)] bg-white p-6 shadow-sm">
+          <h2 className="text-[15px] mb-1">Micro Purchases</h2>
+          <p className="text-[13px] text-[#717182] mb-5">Pay only for what you use.</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {[
+              { icon: Sparkles, label: "AI Sort", price: "$5", desc: "AI-cluster your conversations" },
+              { icon: Zap, label: "Full Assessment", price: "$7", desc: "Forensic evaluation + scores" },
+              { icon: Lock, label: "Private Mode", price: "$7", desc: "Keep your proof page private" },
+              { icon: Crown, label: "Premium Polish", price: "$3", desc: "Enhanced profile presentation" },
+              { icon: RefreshCw, label: "Rerun", price: "$3", desc: "Re-evaluate an assessment" },
+              { icon: Download, label: "Export Packet", price: "$4", desc: "Download full evidence export" },
+              { icon: Briefcase, label: "Career Add-ons", price: "$3–4", desc: "Resume, LinkedIn, cover letter" },
+            ].map(({ icon: Icon, label, price, desc }) => (
+              <div
+                key={label}
+                className="rounded-lg border border-[rgba(0,0,0,0.08)] bg-[#FAFAFA] p-4 flex flex-col gap-2"
+              >
+                <div className="flex items-center justify-between">
+                  <Icon className="h-4 w-4 text-[#717182]" />
+                  <span className="font-mono text-[13px] text-[#030213]">{price}</span>
+                </div>
+                <div className="text-[13px] font-medium">{label}</div>
+                <div className="text-[11px] text-[#717182] leading-snug">{desc}</div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-auto w-full text-[12px]"
+                  onClick={() => toast.info("Coming soon")}
+                >
+                  Buy
+                </Button>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Bundles */}
+        <Card className="border border-[rgba(0,0,0,0.08)] bg-white p-6 shadow-sm">
+          <h2 className="text-[15px] mb-1">Bundles</h2>
+          <p className="text-[13px] text-[#717182] mb-5">Unlock everything at a flat rate.</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded-lg border border-[rgba(0,0,0,0.08)] bg-[#FAFAFA] p-5">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Package className="h-4 w-4 text-[#717182]" />
+                  <span className="text-[14px] font-medium">Unlock All for 90 Days</span>
+                </div>
+                <span className="font-mono text-[15px] text-[#030213]">$24</span>
+              </div>
+              <p className="text-[12px] text-[#717182] mb-4">
+                Every micro-purchase feature, unlimited runs, for 90 days.
+              </p>
+              <Button
+                variant="outline"
+                className="w-full text-[13px]"
+                onClick={() => toast.info("Coming soon")}
+              >
+                Get 90-Day Bundle
+              </Button>
+            </div>
+            <div className="rounded-lg border border-[rgba(0,0,0,0.08)] bg-[#FAFAFA] p-5">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Crown className="h-4 w-4 text-[#717182]" />
+                  <span className="text-[14px] font-medium">Unlock All for 1 Year</span>
+                </div>
+                <span className="font-mono text-[15px] text-[#030213]">$79</span>
+              </div>
+              <p className="text-[12px] text-[#717182] mb-4">
+                Best value — every feature, unlimited for a full year.
+              </p>
+              <Button
+                variant="outline"
+                className="w-full text-[13px]"
+                onClick={() => toast.info("Coming soon")}
+              >
+                Get 1-Year Bundle
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        {/* Feature pricing (legacy — hidden in free mode, shown as reference in paid mode) */}
         {!isFreeMode && (
           <Card className="border border-[rgba(0,0,0,0.08)] bg-white p-6 shadow-sm">
-            <h2 className="text-[15px] mb-4">Feature Pricing</h2>
+            <h2 className="text-[15px] mb-4">Paywall Status</h2>
             <div className="space-y-3">
               {[
                 { feature: "ai_sort", label: "AI Sort", flag: flags.paywall_ai_sort },
                 { feature: "student_publish", label: "Student Proof Publish", flag: flags.paywall_student_publish },
-                { feature: "evaluation", label: "Run Evaluation", flag: flags.paywall_evaluation },
+                { feature: "evaluation", label: "Full Assessment", flag: flags.paywall_evaluation },
                 { feature: "premium_model", label: "Premium Model Upgrade", flag: flags.paywall_premium_model },
               ].map(({ feature, label, flag }) => (
                 <div key={feature} className="flex items-center justify-between text-[13px]">
