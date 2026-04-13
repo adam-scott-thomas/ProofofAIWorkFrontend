@@ -3,9 +3,10 @@ import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Progress } from "../components/ui/progress";
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 import { PaymentModal } from "../components/PaymentModal";
 import { useDirectUpload, useAssessment, useAssessmentResults, useProjects } from "../../hooks/useApi";
+import { useAuthStore } from "../../stores/authStore";
 
 type FlowStep = "upload" | "processing" | "partial-results" | "unlock";
 
@@ -59,6 +60,8 @@ const processingStepLabels = [
 
 export default function UploadFlow() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
+  const authed = isAuthenticated();
   const [step, setStep] = useState<FlowStep>("upload");
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -151,6 +154,25 @@ export default function UploadFlow() {
   const handleUnlock = () => {
     setPaymentModalOpen(true);
   };
+
+  // Auth gate — must be signed in before seeing the upload UI
+  if (!authed) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center px-8">
+        <div className="w-full max-w-md text-center">
+          <h1 className="mb-4 text-4xl tracking-tight">Sign in to upload</h1>
+          <p className="mb-8 text-lg text-[#717182]">
+            Sign in to upload your conversations and get your AI work profile.
+          </p>
+          <Link to="/sign-in?next=/upload">
+            <Button size="lg" className="min-w-[220px] text-lg">
+              Sign in
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   // Upload Step
   if (step === "upload") {
