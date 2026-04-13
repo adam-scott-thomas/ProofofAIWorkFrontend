@@ -3,10 +3,11 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog";
 import { Link, useNavigate } from "react-router";
 import { useState } from "react";
 import { ShareDialog } from "../components/ShareDialog";
-import { useProofPages, usePublishProofPage } from "../../hooks/useApi";
+import { useProofPages, usePublishProofPage, useAssessments, useCreateProofPage } from "../../hooks/useApi";
 import { toast } from "sonner";
 
 type ViewMode = "my-proofs" | "directory";
@@ -17,10 +18,14 @@ export default function ProofPages() {
   const [sortBy, setSortBy] = useState<"recent" | "level" | "proofs">("recent");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [selectedProof, setSelectedProof] = useState<any>(null);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const navigate = useNavigate();
 
   const { data: pagesData, isLoading } = useProofPages();
+  const { data: assessmentsData } = useAssessments();
   const publishMutation = usePublishProofPage();
+  const createProofPage = useCreateProofPage();
 
   if (isLoading) return (
     <div className="flex min-h-screen items-center justify-center text-[13px] text-[#717182]">Loading...</div>
@@ -46,6 +51,14 @@ export default function ProofPages() {
   const publishedPages = proofPages.filter((p: any) => p.published);
   const draftPages = proofPages.filter((p: any) => !p.published);
   const totalViews = proofPages.reduce((sum: number, p: any) => sum + (p.views ?? 0), 0);
+
+  const allAssessments: any[] = Array.isArray(assessmentsData)
+    ? assessmentsData
+    : assessmentsData?.data ?? assessmentsData?.items ?? [];
+  const pageAssessmentIds = new Set(proofPages.map((p: any) => p.assessment_id).filter(Boolean));
+  const unpagedAssessments = allAssessments.filter(
+    (a: any) => a.status === "completed" && !pageAssessmentIds.has(a.id)
+  );
 
   return (
     <div className="min-h-screen">
@@ -85,7 +98,13 @@ export default function ProofPages() {
                 </button>
               </div>
               {viewMode === "my-proofs" && (
-                <Button onClick={() => toast.info("Create a Proof Page from a project — go to Projects and run an assessment first")}>
+                <Button onClick={() => {
+                  if (unpagedAssessments.length === 0) {
+                    toast.info("No completed assessments available. Run an assessment first.");
+                  } else {
+                    setCreateDialogOpen(true);
+                  }
+                }}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create Proof Page
                 </Button>
@@ -281,23 +300,40 @@ export default function ProofPages() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Link to={`/p/${page.slug ?? page.id}`}>
-                                <Button variant="outline" size="sm">
+                              {page.slug ? (
+                                <a href={`/p/${page.slug}`} target="_blank" rel="noopener noreferrer">
+                                  <Button variant="outline" size="sm">
+                                    Preview
+                                  </Button>
+                                </a>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => toast.info("Preview available after publishing")}
+                                >
                                   Preview
                                 </Button>
-                              </Link>
+                              )}
                               <Button
                                 size="sm"
-                                disabled={publishMutation.isPending}
+                                disabled={publishingId === page.id}
                                 onClick={() => {
+                                  setPublishingId(page.id);
                                   publishMutation.mutate(page.id, {
-                                    onSuccess: () => toast.success("Proof page published!"),
-                                    onError: (err: any) => toast.error(err?.message ?? "Failed to publish"),
+                                    onSuccess: () => {
+                                      setPublishingId(null);
+                                      toast.success("Proof page published!");
+                                    },
+                                    onError: (err: any) => {
+                                      setPublishingId(null);
+                                      toast.error(err?.message ?? "Failed to publish");
+                                    },
                                   });
                                 }}
                               >
                                 <Globe className="mr-2 h-4 w-4" />
-                                {publishMutation.isPending ? "Publishing…" : "Publish"}
+                                {publishingId === page.id ? "Publishing…" : "Publish"}
                               </Button>
                               <Button variant="ghost" size="sm" onClick={() => toast.info("More options coming soon")}>
                                 <MoreVertical className="h-4 w-4" />
@@ -349,6 +385,52 @@ export default function ProofPages() {
       {selectedProof && (
         <ShareDialog open={shareDialogOpen} onOpenChange={setShareDialogOpen} data={selectedProof} />
       )}
+
+      {/* Create Proof Page Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Proof Page</DialogTitle>
+            <DialogDescription>
+              Choose a completed assessment to create a public proof page from.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-72 overflow-y-auto">
+            {unpagedAssessments.length === 0 ? (
+              <p className="text-[13px] text-[#717182] py-4 text-center">
+                No completed assessments available.
+              </p>
+            ) : (
+              unpagedAssessments.map((a: any) => (
+                <button
+                  key={a.id}
+                  className="w-full rounded-md border border-[rgba(0,0,0,0.08)] bg-white px-4 py-3 text-left text-[13px] hover:bg-[#F5F5F7] transition-colors"
+                  onClick={() => {
+                    createProofPage.mutate(
+                      { assessment_id: a.id },
+                      {
+                        onSuccess: () => {
+                          setCreateDialogOpen(false);
+                          toast.success("Proof page created!");
+                        },
+                        onError: (err: any) => toast.error(err?.message ?? "Failed to create proof page"),
+                      }
+                    );
+                  }}
+                  disabled={createProofPage.isPending}
+                >
+                  <div className="font-medium">{a.name ?? a.id}</div>
+                  {a.created_at && (
+                    <div className="text-[12px] text-[#717182] mt-0.5">
+                      {new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </div>
+                  )}
+                </button>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
