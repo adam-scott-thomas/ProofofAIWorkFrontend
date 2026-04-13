@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { FolderKanban, X } from "lucide-react";
+import { useNavigate } from "react-router";
+import { FolderKanban, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -12,6 +13,7 @@ import {
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { toast } from "sonner";
+import { useCreateProject } from "../../hooks/useApi";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -21,27 +23,40 @@ interface CreateProjectDialogProps {
 export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const createProject = useCreateProject();
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!name.trim()) {
       toast.error("Project name is required");
       return;
     }
 
-    setLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    toast.success("Project created successfully");
-    setLoading(false);
-    onOpenChange(false);
-    setName("");
-    setDescription("");
+    createProject.mutate(
+      { name: name.trim(), description: description.trim() || undefined },
+      {
+        onSuccess: (data: any) => {
+          toast.success("Project created");
+          setName("");
+          setDescription("");
+          onOpenChange(false);
+          // Navigate to the new project detail page if we got an id back
+          const newId = data?.id ?? data?.project_id;
+          if (newId) {
+            navigate(`/app/projects/${newId}`);
+          }
+        },
+        onError: (err: any) => {
+          toast.error(err?.message ?? "Failed to create project");
+        },
+      },
+    );
   };
 
+  const loading = createProject.isPending;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => !loading && onOpenChange(o)}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -61,6 +76,8 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="mt-1.5"
+              disabled={loading}
+              autoFocus
             />
           </div>
           <div>
@@ -71,14 +88,21 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="mt-1.5"
+              disabled={loading}
             />
           </div>
+          {createProject.isError && (
+            <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-[13px] text-red-700">
+              {(createProject.error as Error)?.message ?? "Failed to create project"}
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             Cancel
           </Button>
-          <Button onClick={handleCreate} disabled={loading}>
+          <Button onClick={handleCreate} disabled={loading || !name.trim()}>
+            {loading && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
             {loading ? "Creating..." : "Create Project"}
           </Button>
         </DialogFooter>
