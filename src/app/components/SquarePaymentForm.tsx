@@ -30,6 +30,32 @@ export default function SquarePaymentForm({
     let cancelled = false;
 
     async function init() {
+      // Dynamically inject Square SDK if not already loaded
+      if (!window.Square) {
+        await new Promise<void>((resolve, reject) => {
+          const existing = document.querySelector(
+            'script[src="https://web.squarecdn.com/v1/square.js"]'
+          );
+          if (existing) {
+            // Script tag already injected by a previous mount — wait for it
+            existing.addEventListener("load", () => resolve());
+            existing.addEventListener("error", () => reject(new Error("Square SDK failed to load")));
+            return;
+          }
+          const script = document.createElement("script");
+          script.src = "https://web.squarecdn.com/v1/square.js";
+          script.type = "text/javascript";
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error("Square SDK failed to load"));
+          document.head.appendChild(script);
+        }).catch((e: Error) => {
+          if (!cancelled) setError(e.message);
+          return Promise.reject(e);
+        });
+      }
+
+      if (cancelled) return;
+
       if (!window.Square) {
         setError("Square SDK failed to load. Please refresh the page.");
         return;
@@ -65,6 +91,7 @@ export default function SquarePaymentForm({
       clearTimeout(timer);
       cardRef.current?.destroy();
       cardRef.current = null;
+      // Note: do not remove the script tag — Square can be reused across mounts
     };
   }, [appId, locationId, containerId]);
 
