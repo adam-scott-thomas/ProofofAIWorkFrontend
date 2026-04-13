@@ -19,17 +19,48 @@ import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
 import { useAuthStore } from "../../stores/authStore";
 import { useUnlockStore } from "../../stores/unlockStore";
 
-const navigation = [
-  { name: "Dashboard", href: "/app", icon: LayoutDashboard, key: "d" },
-  { name: "Upload", href: "/app/upload", icon: Upload, key: "u" },
-  { name: "Projects", href: "/app/projects", icon: FolderKanban, key: "p" },
-  { name: "Conversations", href: "/app/conversations", icon: MessageSquare, key: "c" },
-  { name: "Knowledge Map", href: "/app/knowledge-map", icon: Network, key: "k" },
-  { name: "Assessments", href: "/app/assessments", icon: FileBarChart, key: "a" },
-  { name: "Work Profile", href: "/app/work-profile", icon: User, key: "w" },
-  { name: "Proof Pages", href: "/app/proof-pages", icon: Globe, key: "g" },
-  { name: "Search", href: "/app/search", icon: Search, key: "/" },
+interface NavItem {
+  name: string;
+  href: string;
+  icon: any;
+  key?: string;
+  step?: number;
+}
+
+interface NavSection {
+  label: string;
+  items: NavItem[];
+}
+
+const sections: NavSection[] = [
+  {
+    label: "Main Flow",
+    items: [
+      { name: "Upload & Parse", href: "/app/upload", icon: Upload, key: "u", step: 1 },
+      { name: "Projects",       href: "/app/projects", icon: FolderKanban, key: "p", step: 2 },
+      { name: "Assessments",    href: "/app/assessments", icon: FileBarChart, key: "a", step: 3 },
+      { name: "Publish Proof",  href: "/app/proof-pages", icon: Globe, key: "g", step: 4 },
+    ],
+  },
+  {
+    label: "Explore",
+    items: [
+      { name: "Conversations",  href: "/app/conversations", icon: MessageSquare, key: "c" },
+      { name: "Work Profile",   href: "/app/work-profile", icon: User, key: "w" },
+      { name: "Knowledge Map",  href: "/app/knowledge-map", icon: Network, key: "k" },
+    ],
+  },
+  {
+    label: "Workspace",
+    items: [
+      { name: "Dashboard",      href: "/app", icon: LayoutDashboard, key: "d" },
+      { name: "Search",         href: "/app/search", icon: Search, key: "/" },
+    ],
+  },
 ];
+
+// Flat list for keyboard shortcut lookup
+const allNavItems = sections.flatMap((s) => s.items);
 
 export default function Layout() {
   const location = useLocation();
@@ -49,7 +80,7 @@ export default function Layout() {
 
       // Navigation shortcuts (Cmd/Ctrl + Shift + key)
       if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
-        const nav = navigation.find(n => n.key === e.key.toLowerCase());
+        const nav = allNavItems.find((n) => n.key === e.key.toLowerCase());
         if (nav) {
           e.preventDefault();
           navigate(nav.href);
@@ -69,6 +100,11 @@ export default function Layout() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [navigate]);
+
+  const isActiveHref = (href: string) => {
+    if (href === "/app") return location.pathname === "/app";
+    return location.pathname === href || location.pathname.startsWith(href + "/");
+  };
 
   return (
     <div className={`flex h-screen ${unlocked ? "bg-[var(--pro-blue-light)]" : "bg-[#FAFAFA]"}`}>
@@ -90,31 +126,68 @@ export default function Layout() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 p-4">
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.href;
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+          {sections.map((section, sIdx) => {
+            const isPrimary = section.label === "Main Flow";
             return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-[13px] transition-colors ${
-                  isActive
-                    ? "bg-[#F5F5F7] text-[#030213]"
-                    : "text-[#717182] hover:bg-[#FAFAFA] hover:text-[#030213]"
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.name}
-              </Link>
+              <div key={section.label}>
+                <div
+                  className={`mb-2 px-3 text-[10px] font-medium uppercase tracking-[0.12em] ${
+                    isPrimary ? "text-[#030213]" : "text-[#C0C0C5]"
+                  }`}
+                >
+                  {section.label}
+                </div>
+                <div className="space-y-0.5">
+                  {section.items.map((item) => {
+                    const isActive = isActiveHref(item.href);
+                    return (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        className={`flex items-center gap-3 rounded-md px-3 py-2 text-[13px] transition-colors ${
+                          isActive
+                            ? isPrimary
+                              ? "bg-[#030213] text-white"
+                              : "bg-[#F5F5F7] text-[#030213]"
+                            : isPrimary
+                            ? "text-[#3A3A3A] hover:bg-[#FAFAFA] hover:text-[#030213]"
+                            : "text-[#717182] hover:bg-[#FAFAFA] hover:text-[#030213]"
+                        }`}
+                      >
+                        {item.step && (
+                          <span
+                            className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full font-mono text-[10px] ${
+                              isActive
+                                ? "bg-white/15 text-white"
+                                : "bg-[#F5F5F7] text-[#717182]"
+                            }`}
+                          >
+                            {item.step}
+                          </span>
+                        )}
+                        {!item.step && <item.icon className="h-4 w-4 flex-shrink-0" />}
+                        <span className="flex-1">{item.name}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+                {sIdx === 0 && (
+                  <div className="mt-4 h-px bg-[rgba(0,0,0,0.06)]" />
+                )}
+              </div>
             );
           })}
         </nav>
 
-        {/* Footer Actions */}
-        <div className="border-t border-[rgba(0,0,0,0.08)] p-4 space-y-2">
+        {/* Account section */}
+        <div className="border-t border-[rgba(0,0,0,0.08)] p-3 space-y-0.5">
+          <div className="mb-1 px-3 text-[10px] font-medium uppercase tracking-[0.12em] text-[#C0C0C5]">
+            Account
+          </div>
           <Button
             variant="ghost"
-            className="w-full justify-start text-[13px] text-[#717182]"
+            className="w-full justify-start text-[13px] text-[#717182] font-normal"
             onClick={() => setShortcutsOpen(true)}
           >
             <Command className="mr-3 h-4 w-4" />
@@ -122,7 +195,7 @@ export default function Layout() {
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start text-[13px] text-[#717182]"
+            className="w-full justify-start text-[13px] text-[#717182] font-normal"
             onClick={() => navigate("/app/account")}
           >
             <Settings className="mr-3 h-4 w-4" />
@@ -130,7 +203,7 @@ export default function Layout() {
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start text-[13px] text-red-500 hover:text-red-600 hover:bg-red-50"
+            className="w-full justify-start text-[13px] text-red-500 hover:text-red-600 hover:bg-red-50 font-normal"
             onClick={() => {
               clearToken();
               navigate("/sign-in");
