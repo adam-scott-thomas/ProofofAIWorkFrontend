@@ -1,7 +1,7 @@
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { ArrowRight, Check } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -12,15 +12,17 @@ export default function Landing() {
       <nav className="flex items-center justify-between px-8 py-5">
         <div className="text-[15px] tracking-tight">Proof of AI Work</div>
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate("/explore")} className="text-[13px] text-[#717182] hover:text-[#030213] transition-colors">
+          <Link to="/explore" className="text-[13px] text-[#717182] hover:text-[#030213] transition-colors">
             Explore
-          </button>
-          <button onClick={() => navigate("/leaderboard")} className="text-[13px] text-[#717182] hover:text-[#030213] transition-colors">
+          </Link>
+          <Link to="/leaderboard" className="text-[13px] text-[#717182] hover:text-[#030213] transition-colors">
             Leaderboard
-          </button>
-          <Button variant="outline" size="sm" onClick={() => navigate("/sign-in")}>
-            Sign In
-          </Button>
+          </Link>
+          <Link to="/sign-in">
+            <Button variant="outline" size="sm">
+              Sign In
+            </Button>
+          </Link>
         </div>
       </nav>
 
