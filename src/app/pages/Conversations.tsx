@@ -5,19 +5,39 @@ import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Link } from "react-router";
 import { useState } from "react";
-import { useConversations } from "../../hooks/useApi";
+import { useConversations, usePool } from "../../hooks/useApi";
 import { toast } from "sonner";
 
 export default function Conversations() {
   const [viewMode, setViewMode] = useState<"raw" | "organized">("raw");
 
-  const { data: convsData, isLoading } = useConversations();
+  const { data: convsData, isLoading: convsLoading } = useConversations();
+  const { data: poolData, isLoading: poolLoading } = usePool();
+
+  const isLoading = convsLoading || poolLoading;
 
   if (isLoading) return (
     <div className="flex min-h-screen items-center justify-center text-[13px] text-[#717182]">Loading...</div>
   );
 
-  const conversations: any[] = Array.isArray(convsData) ? convsData : convsData?.data ?? convsData?.items ?? [];
+  // Parsed conversations (have turn_count > 0, proper metadata)
+  const parsedConvs: any[] = Array.isArray(convsData)
+    ? convsData
+    : convsData?.conversations ?? convsData?.data ?? convsData?.items ?? [];
+
+  // Pool items (uploaded but not yet parsed) — include these too so users see everything they uploaded
+  const poolConvs: any[] = poolData?.conversations ?? [];
+
+  // Merge and dedupe by upload_id / id
+  const seenIds = new Set<string>();
+  const conversations: any[] = [];
+  for (const c of [...parsedConvs, ...poolConvs]) {
+    const key = c.upload_id ?? c.id ?? c.file_name;
+    if (key && !seenIds.has(key)) {
+      seenIds.add(key);
+      conversations.push({ ...c, id: c.upload_id ?? c.id });
+    }
+  }
 
   // Group conversations by project for AI Organized view
   const groupedByProject = conversations.reduce((acc: Record<string, any[]>, conv: any) => {

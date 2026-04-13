@@ -16,13 +16,50 @@ import { Card } from "../components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Link, useParams, useNavigate } from "react-router";
 import { useProject, useTriggerEvaluation } from "../../hooks/useApi";
+import { apiFetch, apiPost } from "../../lib/api";
 import { toast } from "sonner";
+import { useState } from "react";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: project, isLoading } = useProject(id ?? "");
   const triggerEvaluation = useTriggerEvaluation();
+  const [evaluating, setEvaluating] = useState(false);
+
+  const handleRunAssessment = async () => {
+    if (!id) return;
+    setEvaluating(true);
+    try {
+      // Check if a brief exists; if not, auto-create a minimal one
+      try {
+        await apiFetch(`/intake/${id}`);
+      } catch {
+        // No brief — create one from project data
+        await apiPost("/intake", {
+          project_id: id,
+          goal_statement: project?.name ?? project?.title ?? "Evaluate this project",
+          role_declaration: "individual_contributor",
+          difficulty_self_rating: 3,
+        });
+      }
+
+      // Now run the evaluation
+      triggerEvaluation.mutate(id, {
+        onSuccess: () => {
+          toast.success("Assessment started — check Assessments page for results");
+          navigate("/app/assessments");
+        },
+        onError: (err: any) => {
+          toast.error(err?.message ?? "Failed to start assessment");
+          setEvaluating(false);
+        },
+      });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to start assessment");
+      setEvaluating(false);
+    }
+  };
 
   if (isLoading) return (
     <div className="flex min-h-screen items-center justify-center text-[13px] text-[#717182]">Loading...</div>
@@ -74,20 +111,11 @@ export default function ProjectDetail() {
             </div>
             <div className="flex items-center gap-2">
               <Button
-                disabled={triggerEvaluation.isPending}
-                onClick={() => {
-                  if (!id) return;
-                  triggerEvaluation.mutate(id, {
-                    onSuccess: () => {
-                      toast.success("Assessment started — check Assessments page for results");
-                      navigate("/app/assessments");
-                    },
-                    onError: (err: any) => toast.error(err?.message ?? "Failed to start assessment"),
-                  });
-                }}
+                disabled={evaluating || triggerEvaluation.isPending}
+                onClick={handleRunAssessment}
               >
                 <Play className="mr-2 h-4 w-4" />
-                {triggerEvaluation.isPending ? "Starting…" : "Run Assessment"}
+                {evaluating || triggerEvaluation.isPending ? "Starting…" : "Run Assessment"}
               </Button>
               <Button variant="outline" onClick={() => toast.info("Project settings coming soon")}>
                 <Settings className="h-4 w-4" />
