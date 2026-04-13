@@ -216,28 +216,55 @@ export default function Processing() {
           {isProcessing && (
             <Card className="mb-6 border border-[rgba(0,0,0,0.08)] bg-white shadow-sm">
               <CardContent className="p-6">
-                <div className="space-y-2">
+                <style>
+                  {`
+                    @keyframes poaw-pulse-bar {
+                      0%   { transform: translateX(-100%); }
+                      50%  { transform: translateX(0); }
+                      100% { transform: translateX(100%); }
+                    }
+                    @keyframes poaw-fade-in {
+                      from { opacity: 0; transform: translateY(4px); }
+                      to   { opacity: 1; transform: translateY(0); }
+                    }
+                  `}
+                </style>
+                <div className="space-y-3">
                   {STEP_ORDER.slice(0, -1).map((step, i) => {
                     const isActive = i === fakeStepIdx;
                     const isComplete = i < fakeStepIdx;
                     return (
-                      <div key={step} className="flex items-center gap-3">
-                        <div className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold ${
+                      <div
+                        key={step}
+                        className="flex items-center gap-3"
+                        style={isActive ? { animation: "poaw-fade-in 400ms ease-out" } : {}}
+                      >
+                        <div className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold transition-all duration-500 ${
                           isComplete ? "bg-emerald-100 text-emerald-700" :
-                          isActive ? "bg-blue-100 text-blue-700" :
+                          isActive ? "bg-blue-100 text-blue-700 ring-2 ring-blue-200" :
                           "bg-[#F5F5F7] text-[#717182]"
                         }`}>
                           {isComplete ? <CheckCircle2 className="h-3.5 w-3.5" /> :
                            isActive ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> :
                            i + 1}
                         </div>
-                        <span className={`text-[13px] ${
-                          isActive ? "font-medium text-[#030213]" :
-                          isComplete ? "text-emerald-700" :
-                          "text-[#717182]"
-                        }`}>
-                          {STEP_LABELS[step]?.replace("...", "") || step}
-                        </span>
+                        <div className="flex-1">
+                          <span className={`text-[13px] transition-colors duration-300 ${
+                            isActive ? "font-medium text-[#030213]" :
+                            isComplete ? "text-emerald-700" :
+                            "text-[#C0C0C5]"
+                          }`}>
+                            {STEP_LABELS[step]?.replace("...", "") || step}
+                          </span>
+                          {isActive && (
+                            <div className="mt-1.5 h-0.5 w-full overflow-hidden rounded-full bg-blue-100">
+                              <div
+                                className="h-full w-1/3 bg-blue-500"
+                                style={{ animation: "poaw-pulse-bar 1.5s ease-in-out infinite" }}
+                              />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     );
                   })}

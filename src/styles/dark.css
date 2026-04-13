@@ -2,7 +2,22 @@
    Dark theme override — targets existing Tailwind arbitrary values
    Applied under <html class="dark">. Public pages opt-out via class="not-dark"
    on an ancestor.
+
+   Default (no .dark) = light gray resting state.
+   .dark is a TRIGGERED state for AI mode, not the default.
    ============================================================================ */
+
+/* --- Light resting state: soft gray, not pure white --- */
+html, body {
+  background: #F5F5F7;
+  transition: background-color 800ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Everything that references the main page background shifts with the theme */
+html:not(.dark) .bg-\[\#FAFAFA\] {
+  background-color: #F5F5F7;
+}
 
 html.dark {
   color-scheme: dark;

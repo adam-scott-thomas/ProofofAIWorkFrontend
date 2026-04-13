@@ -6,6 +6,7 @@ import { Progress } from "../components/ui/progress";
 import { useState } from "react";
 import { UploadDialog } from "../components/UploadDialog";
 import { PaymentModal } from "../components/PaymentModal";
+import ProgressSteps from "../components/ProgressSteps";
 import { usePool, useTriggerClustering, useDirectUpload } from "../../hooks/useApi";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -47,9 +48,19 @@ export default function UploadPool() {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [clusterDone, setClusterDone] = useState(false);
+  const [clusterResult, setClusterResult] = useState<{ projects: number; unclustered: number } | null>(null);
   const qc = useQueryClient();
   const clusterMutation = useTriggerClustering();
   const retryUpload = useDirectUpload();
+
+  const FREE_CLUSTER_STEPS = [
+    { label: "Reading conversations", duration: 1200 },
+    { label: "Matching titles", duration: 1800 },
+    { label: "Grouping by time window", duration: 1500 },
+    { label: "Naming projects", duration: 1000 },
+    { label: "Finalizing", duration: 800 },
+  ];
 
   const handleDelete = async (uploadId: string) => {
     setDeletingId(uploadId);
@@ -131,9 +142,15 @@ export default function UploadPool() {
               variant="outline"
               disabled={clusterMutation.isPending}
               onClick={() => {
+                setClusterDone(false);
+                setClusterResult(null);
                 clusterMutation.mutate(undefined, {
-                  onSuccess: () => {
-                    toast.success("Clustering complete — check Projects page");
+                  onSuccess: (data: any) => {
+                    setClusterDone(true);
+                    setClusterResult({
+                      projects: data?.projects?.length ?? data?.project_count ?? 0,
+                      unclustered: data?.unclustered_count ?? data?.unclustered ?? 0,
+                    });
                     qc.invalidateQueries({ queryKey: ["projects"] });
                     qc.invalidateQueries({ queryKey: ["pool"] });
                   },
@@ -151,6 +168,24 @@ export default function UploadPool() {
               <span className="ml-2 text-[11px]">$7</span>
             </Button>
           </div>
+
+          {/* Progress stepper appears during and after clustering */}
+          {(clusterMutation.isPending || clusterDone) && (
+            <div className="mt-5 rounded-md border border-[rgba(0,0,0,0.06)] bg-[#FAFAFA] p-4">
+              <ProgressSteps
+                steps={FREE_CLUSTER_STEPS}
+                active={clusterMutation.isPending || clusterDone}
+                done={clusterDone}
+                doneLabel={
+                  clusterResult
+                    ? `→ ${clusterResult.projects} project${clusterResult.projects !== 1 ? "s" : ""} created${
+                        clusterResult.unclustered > 0 ? ` · ${clusterResult.unclustered} unclustered` : ""
+                      }`
+                    : "Clustering complete"
+                }
+              />
+            </div>
+          )}
         </Card>
 
         {/* Uploads List */}
