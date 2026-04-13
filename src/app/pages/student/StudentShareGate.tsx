@@ -24,7 +24,10 @@ export default function StudentShareGate() {
       : "";
 
   const shareText = `I just analyzed my AI work style with Proof of AI Work.${scoreFragment} See how you work with AI →`;
-  const shareUrl = "https://proofofaiwork.com/student";
+  // Use the proof page URL if we have an assessment ID, otherwise fall back to the landing page
+  const shareUrl = assessmentId
+    ? `https://proofofaiwork.com/p/${assessmentId}`
+    : "https://proofofaiwork.com/";
 
   const handleShare = (platform: "twitter" | "linkedin") => {
     let url = "";
