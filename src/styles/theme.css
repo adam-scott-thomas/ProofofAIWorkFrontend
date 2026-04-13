@@ -47,7 +47,18 @@
   --score-execution-light: #ECFEFF;
   --score-cai: #D97706;
   --score-cai-light: #FEF3C7;
-  
+
+  /* Trust palette — used when Pro is unlocked */
+  --pro-blue: #1E40AF;
+  --pro-blue-light: #EFF6FF;
+  --pro-blue-border: #BFDBFE;
+  --pro-green: #047857;
+  --pro-green-light: #ECFDF5;
+  --pro-green-border: #A7F3D0;
+  --pro-amber: #B45309;
+  --pro-amber-light: #FFFBEB;
+  --pro-amber-border: #FDE68A;
+
   /* Typography - Editorial serif for score numbers */
   --font-serif: 'Fraunces', ui-serif, Georgia, serif;
 }

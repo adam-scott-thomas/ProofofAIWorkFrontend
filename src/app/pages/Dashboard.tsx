@@ -3,7 +3,7 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Link, useNavigate } from "react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { ShareDialog } from "../components/ShareDialog";
@@ -17,6 +17,7 @@ import {
   useAssessments,
   useProofPages,
 } from "../../hooks/useApi";
+import { useUnlockStore } from "../../stores/unlockStore";
 
 function formatRelativeTime(isoString: string) {
   const date = new Date(isoString);
@@ -36,6 +37,8 @@ export default function Dashboard() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const unlocked = useUnlockStore((s) => s.unlocked);
+  const setUnlocked = useUnlockStore((s) => s.setUnlocked);
 
   // Real API data
   const { data: user, isLoading: userLoading } = useCurrentUser();
@@ -60,6 +63,13 @@ export default function Dashboard() {
 
   // "Has AI Sorted" = user has at least one project
   const hasAISorted = projectCount > 0;
+
+  // Auto-unlock if the user already has projects (paid in the past)
+  useEffect(() => {
+    if (hasAISorted && !unlocked) {
+      setUnlocked();
+    }
+  }, [hasAISorted, unlocked, setUnlocked]);
 
   // Work profile scores with safe defaults
   const hlsScore = workProfile?.human_leadership_score ?? 0;

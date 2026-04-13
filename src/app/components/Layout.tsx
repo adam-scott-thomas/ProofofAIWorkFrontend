@@ -17,6 +17,7 @@ import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
 import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
 import { useAuthStore } from "../../stores/authStore";
+import { useUnlockStore } from "../../stores/unlockStore";
 
 const navigation = [
   { name: "Dashboard", href: "/app", icon: LayoutDashboard, key: "d" },
@@ -34,6 +35,7 @@ export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { clearToken } = useAuthStore();
+  const unlocked = useUnlockStore((s) => s.unlocked);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   useEffect(() => {
@@ -69,13 +71,22 @@ export default function Layout() {
   }, [navigate]);
 
   return (
-    <div className="flex h-screen bg-[#FAFAFA]">
+    <div className={`flex h-screen ${unlocked ? "bg-[var(--pro-blue-light)]" : "bg-[#FAFAFA]"}`}>
       {/* Sidebar */}
-      <aside className="w-64 border-r border-[rgba(0,0,0,0.08)] bg-white flex flex-col">
+      <aside className={`w-64 border-r ${unlocked ? "border-[var(--pro-blue-border)]" : "border-[rgba(0,0,0,0.08)]"} bg-white flex flex-col`}>
         {/* Logo/Brand */}
-        <div className="border-b border-[rgba(0,0,0,0.08)] px-6 py-5">
-          <h1 className="text-[15px] tracking-tight">Proof of AI Work</h1>
-          <p className="mt-0.5 font-mono text-[11px] text-[#717182]">Forensic Evidence</p>
+        <div className={`border-b px-6 py-5 ${unlocked ? "border-[var(--pro-blue-border)]" : "border-[rgba(0,0,0,0.08)]"}`}>
+          <div className="flex items-center gap-2">
+            <h1 className={`text-[15px] tracking-tight ${unlocked ? "text-[var(--pro-blue)]" : ""}`}>Proof of AI Work</h1>
+            {unlocked && (
+              <span className="inline-flex items-center rounded-sm bg-[var(--pro-green-light)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-[var(--pro-green)] border border-[var(--pro-green-border)]">
+                Pro
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 font-mono text-[11px] text-[#717182]">
+            {unlocked ? "Verified · Maelstrom LLC" : "Forensic Evidence"}
+          </p>
         </div>
 
         {/* Navigation */}

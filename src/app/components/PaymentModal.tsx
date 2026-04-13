@@ -5,7 +5,9 @@ import { Sparkles, Lock, CreditCard, Bitcoin, ExternalLink, Loader2, AlertCircle
 import { useState } from "react";
 import { usePaymentConfig } from "../../hooks/useApi";
 import { apiPost } from "../../lib/api";
+import { useUnlockStore } from "../../stores/unlockStore";
 import SquarePaymentForm from "./SquarePaymentForm";
+import UnlockSuccess from "./UnlockSuccess";
 
 interface PaymentModalProps {
   open: boolean;
@@ -17,6 +19,7 @@ type PaymentTab = "card" | "crypto";
 
 export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalProps) {
   const { data: paymentConfig } = usePaymentConfig();
+  const setUnlocked = useUnlockStore((s) => s.setUnlocked);
 
   const [tab, setTab] = useState<PaymentTab>("card");
   const [cardLoading, setCardLoading] = useState(false);
@@ -25,6 +28,9 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
   const [cryptoInvoiceUrl, setCryptoInvoiceUrl] = useState<string | null>(null);
   const [coupon, setCoupon] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [successMethod, setSuccessMethod] = useState<string>("Card");
+  const [successAmount, setSuccessAmount] = useState<string>("$7.00");
 
   const VALID_COUPONS: Record<string, number> = {
     "MAELSTROM99": 100,
@@ -46,22 +52,20 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
 
   const [unlocking, setUnlocking] = useState(false);
 
-  const runAiSort = async () => {
-    setUnlocking(true);
-    setError(null);
-    try {
-      // Fire and forget — don't block the UI waiting for LLM clustering
-      apiPost("/projects/ai-cluster", {}).catch(() => {});
-      // Close immediately and let the dashboard refresh
-      onOpenChange(false);
-      onComplete();
-    } finally {
-      setUnlocking(false);
-    }
+  const triggerUnlock = (method: string, amount: string) => {
+    setUnlocked();
+    setSuccessMethod(method);
+    setSuccessAmount(amount);
+    onOpenChange(false);
+    setSuccessOpen(true);
+    // Kick off clustering in background
+    apiPost("/projects/ai-cluster", {}).catch(() => {});
   };
 
   const handleFreeUnlock = () => {
-    runAiSort();
+    setUnlocking(true);
+    triggerUnlock("Coupon MAELSTROM99", "$0.00");
+    setUnlocking(false);
   };
 
   const handleClose = (open: boolean) => {
@@ -80,10 +84,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
     setCardLoading(true);
     try {
       await apiPost("/payments/ai-sort", { source_id: sourceId });
-      // Payment succeeded — fire clustering async and close
-      apiPost("/projects/ai-cluster", {}).catch(() => {});
-      onOpenChange(false);
-      onComplete();
+      triggerUnlock("Card", "$7.00");
     } catch (e: any) {
       setError(e.message || "Payment failed. Please try again.");
     } finally {
@@ -106,6 +107,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
@@ -326,5 +328,15 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
         </div>
       </DialogContent>
     </Dialog>
+    <UnlockSuccess
+      open={successOpen}
+      onClose={() => {
+        setSuccessOpen(false);
+        onComplete();
+      }}
+      amount={successAmount}
+      method={successMethod}
+    />
+    </>
   );
 }
