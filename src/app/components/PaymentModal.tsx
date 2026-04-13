@@ -30,7 +30,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
   const [couponApplied, setCouponApplied] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [successMethod, setSuccessMethod] = useState<string>("Card");
-  const [successAmount, setSuccessAmount] = useState<string>("$7.00");
+  const [successAmount, setSuccessAmount] = useState<string>("$5.00");
 
   const VALID_COUPONS: Record<string, number> = {
     "MAELSTROM99": 100,
@@ -84,7 +84,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
     setCardLoading(true);
     try {
       await apiPost("/payments/ai-sort", { source_id: sourceId });
-      triggerUnlock("Card", "$7.00");
+      triggerUnlock("Card", "$5.00");
     } catch (e: any) {
       setError(e.message || "Payment failed. Please try again.");
     } finally {
@@ -212,7 +212,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
                 }`}
               >
                 <CreditCard className="h-3.5 w-3.5" />
-                Card — $7
+                Card — $5
               </button>
               <button
                 onClick={() => { setTab("crypto"); setError(null); }}
@@ -223,7 +223,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
                 }`}
               >
                 <Bitcoin className="h-3.5 w-3.5" />
-                Crypto — $5.90
+                Crypto — $4.20
               </button>
             </div>
 
@@ -249,7 +249,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
                     locationId={paymentConfig.location_id}
                     onToken={handleCardToken}
                     onCancel={() => onOpenChange(false)}
-                    submitLabel="Pay $7"
+                    submitLabel="Pay $5"
                     loading={cardLoading}
                   />
                 ) : (
@@ -285,7 +285,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
                       >
                         {cryptoLoading && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
                         <Bitcoin className="mr-2 h-3.5 w-3.5" />
-                        Pay with Crypto — $5.90
+                        Pay with Crypto — $4.20
                       </Button>
                     </div>
                   </>
