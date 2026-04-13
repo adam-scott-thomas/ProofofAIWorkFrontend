@@ -1,4 +1,4 @@
-import { Upload, AlertCircle, CheckCircle2, Clock, Download, Trash2, Loader2, Sparkles } from "lucide-react";
+import { Upload, AlertCircle, CheckCircle2, Clock, Download, Trash2, Loader2, Sparkles, Eraser } from "lucide-react";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
@@ -10,7 +10,7 @@ import ProgressSteps from "../components/ProgressSteps";
 import { usePool, useTriggerClustering, useDirectUpload } from "../../hooks/useApi";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { apiDelete } from "../../lib/api";
+import { apiDelete, apiPost } from "../../lib/api";
 
 function StatusBadge({ status, progress }: { status: string; progress?: number }) {
   if (status === "completed" || status === "done") {
@@ -48,11 +48,27 @@ export default function UploadPool() {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [cleaningUp, setCleaningUp] = useState(false);
   const [clusterDone, setClusterDone] = useState(false);
   const [clusterResult, setClusterResult] = useState<{ projects: number; unclustered: number } | null>(null);
   const qc = useQueryClient();
   const clusterMutation = useTriggerClustering();
   const retryUpload = useDirectUpload();
+
+  const handleCleanupUnparsed = async () => {
+    if (!window.confirm("Delete all unparsed pool items? This cannot be undone.")) return;
+    setCleaningUp(true);
+    try {
+      const res: any = await apiPost("/pool/cleanup-unparsed", {});
+      const n = res?.deleted ?? res?.count ?? 0;
+      toast.success(`Deleted ${n} unparsed item${n !== 1 ? "s" : ""}`);
+      qc.invalidateQueries({ queryKey: ["pool"] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Cleanup failed");
+    } finally {
+      setCleaningUp(false);
+    }
+  };
 
   const FREE_CLUSTER_STEPS = [
     { label: "Reading conversations", duration: 1200 },
@@ -104,10 +120,27 @@ export default function UploadPool() {
                 Imported conversations awaiting project assignment
               </p>
             </div>
-            <Button onClick={() => setUploadDialogOpen(true)}>
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Conversations
-            </Button>
+            <div className="flex items-center gap-2">
+              {uploads.some((u: any) => !u.turn_count) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={cleaningUp}
+                  onClick={handleCleanupUnparsed}
+                >
+                  {cleaningUp ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Eraser className="mr-2 h-4 w-4" />
+                  )}
+                  Clean up unparsed
+                </Button>
+              )}
+              <Button onClick={() => setUploadDialogOpen(true)}>
+                <Upload className="mr-2 h-4 w-4" />
+                Upload Conversations
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -165,7 +198,7 @@ export default function UploadPool() {
             <Button onClick={() => setPaymentModalOpen(true)}>
               <Sparkles className="mr-2 h-4 w-4" />
               AI Clustering
-              <span className="ml-2 text-[11px]">$7</span>
+              <span className="ml-2 text-[11px]">$5</span>
             </Button>
           </div>
 
@@ -238,7 +271,32 @@ export default function UploadPool() {
                     <div className="flex items-center gap-2">
                       {(upload.status === "completed" || upload.status === "done") && (
                         <>
-                          <Button variant="ghost" size="sm" onClick={() => toast.info("Download coming soon")}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                              const assessmentId = upload.assessment_id ?? upload.id;
+                              try {
+                                const { useAuthStore } = await import("../../stores/authStore");
+                                const token = useAuthStore.getState().token;
+                                const apiHost = (import.meta as any).env?.VITE_API_URL || "";
+                                const base = apiHost ? `${apiHost.replace(/\/$/, "")}/api/v1` : "/api/v1";
+                                const resp = await fetch(`${base}/assessments/${assessmentId}/download?format=json`, {
+                                  headers: token ? { Authorization: `Bearer ${token}` } : {},
+                                });
+                                if (!resp.ok) { toast.error("Download failed"); return; }
+                                const blob = await resp.blob();
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement("a");
+                                a.href = url;
+                                a.download = `assessment-${assessmentId}.json`;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                              } catch {
+                                toast.error("Download failed");
+                              }
+                            }}
+                          >
                             <Download className="h-4 w-4" />
                           </Button>
                           <Button
