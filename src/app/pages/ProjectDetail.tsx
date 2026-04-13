@@ -35,10 +35,18 @@ export default function ProjectDetail() {
       try {
         await apiFetch(`/intake/${id}`);
       } catch {
-        // No brief — create one from project data
+        // No brief — create one from project data. Backend requires:
+        //   goal_statement (≥10 chars), solo_time_estimate_hours (>0),
+        //   starting_point ∈ {"from_scratch","iterating"}
+        const projectName = project?.name ?? project?.title ?? "this project";
+        const goalStatement = project?.description && project.description.length >= 10
+          ? project.description
+          : `Evaluate the work captured in ${projectName} and assess human/AI collaboration quality.`;
         await apiPost("/intake", {
           project_id: id,
-          goal_statement: project?.name ?? project?.title ?? "Evaluate this project",
+          goal_statement: goalStatement,
+          solo_time_estimate_hours: 10,
+          starting_point: "from_scratch",
           role_declaration: "individual_contributor",
           difficulty_self_rating: 3,
         });
