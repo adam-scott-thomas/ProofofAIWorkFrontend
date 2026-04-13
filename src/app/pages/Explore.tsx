@@ -39,9 +39,9 @@ export default function Explore() {
                   Leaderboard
                 </Button>
               </Link>
-              <Link to="/sign-in">
+              <Link to="/upload">
                 <Button>
-                  Get Your Score
+                  Upload your conversations
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>

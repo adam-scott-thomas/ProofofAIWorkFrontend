@@ -51,7 +51,7 @@ export default function Leaderboard() {
               </Link>
               <Link to="/upload">
                 <Button>
-                  Get Ranked
+                  Upload your conversations
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
