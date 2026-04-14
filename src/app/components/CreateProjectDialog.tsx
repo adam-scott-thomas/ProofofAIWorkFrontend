@@ -33,7 +33,7 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
     }
 
     createProject.mutate(
-      { name: name.trim(), description: description.trim() || undefined },
+      { title: name.trim(), description: description.trim() || undefined },
       {
         onSuccess: (data: any) => {
           toast.success("Project created");

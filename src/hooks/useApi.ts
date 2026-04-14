@@ -181,8 +181,12 @@ export const useCryptoStatus = (invoiceId: string | null) =>
 export const useCreateProject = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { name: string; description?: string }) =>
-      apiPost<any>("/projects", body),
+    // Backend expects `title`; accept `name` from legacy callers and normalize.
+    mutationFn: (body: { title?: string; name?: string; description?: string }) =>
+      apiPost<any>("/projects", {
+        title: body.title ?? body.name ?? "",
+        description: body.description,
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),
   });
 };

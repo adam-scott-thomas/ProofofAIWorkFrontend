@@ -155,7 +155,7 @@ export default function Projects() {
                             <div className="flex-1">
                               <div className="mb-1 flex items-center gap-3">
                                 <FolderKanban className="h-4 w-4" style={{ color: 'var(--score-execution)' }} />
-                                <div className="text-[15px]">{project.name}</div>
+                                <div className="text-[15px]">{project.title ?? project.name ?? "Untitled project"}</div>
                               </div>
                               <p className="mb-3 ml-7 text-[13px] text-[#717182]">{project.description ?? ""}</p>
                               <div className="ml-7 flex items-center gap-4 text-[13px] text-[#717182]">

@@ -181,7 +181,7 @@ export default function Search() {
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
                               <div className="mb-1 flex items-center gap-3">
-                                <h3 className="text-[14px]">{project.name}</h3>
+                                <h3 className="text-[14px]">{project.title ?? project.name ?? "Untitled project"}</h3>
                                 {project.relevance != null && (
                                   <div className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-mono text-blue-700">
                                     {Math.round(project.relevance * 100)}% match
@@ -336,7 +336,7 @@ export default function Search() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <div className="mb-1 flex items-center gap-3">
-                          <h3 className="text-[14px]">{project.name}</h3>
+                          <h3 className="text-[14px]">{project.title ?? project.name ?? "Untitled project"}</h3>
                           {project.relevance != null && (
                             <div className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-mono text-blue-700">
                               {Math.round(project.relevance * 100)}% match

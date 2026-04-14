@@ -38,7 +38,7 @@ export default function ProjectDetail() {
         // No brief — create one from project data. Backend requires:
         //   goal_statement (≥10 chars), solo_time_estimate_hours (>0),
         //   starting_point ∈ {"from_scratch","iterating"}
-        const projectName = project?.name ?? project?.title ?? "this project";
+        const projectName = project?.title ?? project?.name ?? "this project";
         const goalStatement = project?.description && project.description.length >= 10
           ? project.description
           : `Evaluate the work captured in ${projectName} and assess human/AI collaboration quality.`;
@@ -96,7 +96,7 @@ export default function ProjectDetail() {
             <div className="flex-1">
               <div className="mb-2 flex items-center gap-3">
                 <FolderKanban className="h-5 w-5 text-[#717182]" />
-                <h1 className="text-xl tracking-tight">{project?.name ?? "Project"}</h1>
+                <h1 className="text-xl tracking-tight">{project?.title ?? project?.name ?? "Project"}</h1>
                 {hasAssessment && (
                   <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
                     Assessed
