@@ -8,7 +8,6 @@ import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Link, useParams, useNavigate } from "react-router";
 import { useProject, useTriggerEvaluation } from "../../hooks/useApi";
-import { apiFetch, apiPost } from "../../lib/api";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -23,31 +22,15 @@ export default function ProjectDetail() {
     if (!id) return;
     setEvaluating(true);
     try {
-      // Check if a brief exists; if not, auto-create a minimal one
-      try {
-        await apiFetch(`/intake/${id}`);
-      } catch {
-        // No brief — create one from project data. Backend requires:
-        //   goal_statement (≥10 chars), solo_time_estimate_hours (>0),
-        //   starting_point ∈ {"from_scratch","iterating"}
-        const projectName = project?.title ?? project?.name ?? "this project";
-        const goalStatement = project?.description && project.description.length >= 10
-          ? project.description
-          : `Evaluate the work captured in ${projectName} and assess human/AI collaboration quality.`;
-        await apiPost("/intake", {
-          project_id: id,
-          goal_statement: goalStatement,
-          solo_time_estimate_hours: 10,
-          starting_point: "from_scratch",
-          role_declaration: "individual_contributor",
-          difficulty_self_rating: 3,
-        });
-      }
-
-      // Now run the evaluation
       triggerEvaluation.mutate(id, {
-        onSuccess: () => {
-          toast.success("Assessment started — check Assessments page for results");
+        onSuccess: (data: any) => {
+          const assessmentId = data?.assessment_id;
+          if (assessmentId) {
+            toast.success("Assessment started");
+            navigate(`/app/assessment/${assessmentId}/processing`);
+            return;
+          }
+          toast.success("Assessment started");
           navigate("/app/assessments");
         },
         onError: (err: any) => {
@@ -214,4 +197,3 @@ export default function ProjectDetail() {
     </div>
   );
 }
-

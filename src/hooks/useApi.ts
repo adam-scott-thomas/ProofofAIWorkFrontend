@@ -136,7 +136,7 @@ export const useCreateIntake = () =>
 export const useTriggerEvaluation = () =>
   useMutation({
     mutationFn: (projectId: string) =>
-      apiPost<any>(`/work-profile/evaluate?project_id=${projectId}`, {}),
+      apiPost<any>(`/projects/${projectId}/evaluate`, {}),
   });
 
 // Billing
