@@ -48,7 +48,9 @@ export default function Conversations() {
   const [sourceFilter, setSourceFilter] = useState<string>("all");
 
   const params: Record<string, string> = {};
-  if (projectFilter !== "all") params.project_id = projectFilter;
+  // "unassigned" is a UI-only pseudo-filter; the backend expects a UUID or
+  // no filter, so we skip server-side project_id when showing unassigned.
+  if (projectFilter !== "all" && projectFilter !== "unassigned") params.project_id = projectFilter;
   if (sourceFilter !== "all") params.source_format = sourceFilter;
   const listQuery = useQuery<ListResponse>({
     queryKey: ["conversations", params],
@@ -60,7 +62,10 @@ export default function Conversations() {
   });
 
   const projects = asArray<{ id: string; title: string }>(projectsData);
-  const conversations = listQuery.data?.conversations ?? [];
+  const rawConversations = listQuery.data?.conversations ?? [];
+  const conversations = projectFilter === "unassigned"
+    ? rawConversations.filter((conversation) => !conversation.project_id)
+    : rawConversations;
   const total = listQuery.data?.total ?? 0;
 
   const sourceFormats = useMemo(() => {
