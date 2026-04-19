@@ -325,6 +325,11 @@ function SummaryTile({ label, value }: { label: string; value: number }) {
   );
 }
 
+function ogImageUrl(slugOrToken: string) {
+  const apiHost = import.meta.env.VITE_API_URL || "";
+  return `${apiHost.replace(/\/$/, "")}/api/v1/p/${slugOrToken}/og.png`;
+}
+
 function PageRow({
   page,
   onEdit,
@@ -363,6 +368,26 @@ function PageRow({
   return (
     <Card className="border border-[#D8D2C4] bg-white p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
+        {published ? (
+          <a
+            href={path || "#"}
+            target="_blank"
+            rel="noreferrer"
+            title="Open public page"
+            className="relative block h-20 w-36 shrink-0 overflow-hidden rounded-md border border-[#D8D2C4] bg-[#FBF8F1]"
+          >
+            <img
+              src={ogImageUrl(page.slug || page.public_token)}
+              alt=""
+              loading="lazy"
+              className="h-full w-full object-cover"
+              onError={(event) => {
+                const target = event.currentTarget as HTMLImageElement;
+                target.style.display = "none";
+              }}
+            />
+          </a>
+        ) : null}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] tracking-[0.08em] uppercase ${STATUS_STYLE[page.status] || "bg-[#EAE3CF] text-[#6B6B66]"}`}>
