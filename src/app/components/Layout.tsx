@@ -9,6 +9,7 @@ import {
   LogOut,
   MessageSquare,
   Search as SearchIcon,
+  Settings as SettingsIcon,
   Upload,
   FileBarChart,
 } from "lucide-react";
@@ -204,7 +205,18 @@ export default function Layout() {
           </div>
         </nav>
 
-        <div className="mt-auto px-3 pb-4">
+        <div className="mt-auto space-y-1 px-3 pb-4">
+          <Link
+            to="/app/settings"
+            className={`flex items-center gap-3 rounded-md px-3 py-2 text-[13px] transition-colors ${
+              location.pathname.startsWith("/app/settings")
+                ? "bg-[#161616] text-white"
+                : "text-[#5C5C5C] hover:bg-[#F3EEE2] hover:text-[#161616]"
+            }`}
+          >
+            <SettingsIcon className="h-4 w-4" />
+            Settings
+          </Link>
           <Button
             variant="ghost"
             className="w-full justify-start text-[13px] text-[#8E3B34] hover:bg-[#FBEDEC] hover:text-[#8E3B34]"
