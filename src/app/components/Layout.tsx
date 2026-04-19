@@ -1,24 +1,137 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
-import { FolderKanban, Globe, LayoutDashboard, LogOut, MessageSquare, Upload, FileBarChart, Activity } from "lucide-react";
+import {
+  Activity,
+  FolderKanban,
+  Globe,
+  LayoutDashboard,
+  LogOut,
+  MessageSquare,
+  Upload,
+  FileBarChart,
+} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "./ui/button";
 import { useAuthStore } from "../../stores/authStore";
+import { apiFetch } from "../../lib/api";
+import { asArray } from "../lib/poaw";
 
-const items = [
-  { name: "Dashboard", href: "/app", icon: LayoutDashboard },
-  { name: "Upload", href: "/app/upload", icon: Upload },
+type NavItem = {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badgeKind?: "info" | "warn" | "alert";
+  getBadge?: (ctx: SidebarContext) => number;
+};
+
+type SidebarContext = {
+  pendingRequests: number;
+  activeDisputes: number;
+  runningAssessments: number;
+  draftProofs: number;
+  unassignedUploads: number;
+};
+
+const items: NavItem[] = [
+  {
+    name: "Dashboard",
+    href: "/app",
+    icon: LayoutDashboard,
+    badgeKind: "alert",
+    getBadge: (ctx) => ctx.pendingRequests + ctx.activeDisputes,
+  },
+  {
+    name: "Upload",
+    href: "/app/upload",
+    icon: Upload,
+    badgeKind: "warn",
+    getBadge: (ctx) => ctx.unassignedUploads,
+  },
   { name: "Conversations", href: "/app/conversations", icon: MessageSquare },
   { name: "Projects", href: "/app/projects", icon: FolderKanban },
-  { name: "Assessments", href: "/app/assessments", icon: FileBarChart },
+  {
+    name: "Assessments",
+    href: "/app/assessments",
+    icon: FileBarChart,
+    badgeKind: "info",
+    getBadge: (ctx) => ctx.runningAssessments,
+  },
   { name: "Work Profile", href: "/app/work-profile", icon: Activity },
-  { name: "Proof Pages", href: "/app/proof-pages", icon: Globe },
+  {
+    name: "Proof Pages",
+    href: "/app/proof-pages",
+    icon: Globe,
+    badgeKind: "warn",
+    getBadge: (ctx) => ctx.draftProofs,
+  },
 ];
+
+function useSidebarContext(): SidebarContext {
+  const { isAuthenticated } = useAuthStore();
+  const authed = isAuthenticated();
+
+  const pool = useQuery<{ unassigned?: number }>({
+    queryKey: ["pool"],
+    queryFn: () => apiFetch<{ unassigned?: number }>(`/pool`),
+    enabled: authed,
+  });
+  const assessments = useQuery<any>({
+    queryKey: ["assessments"],
+    queryFn: () => apiFetch<any>(`/assessments`),
+    enabled: authed,
+  });
+  const proofPages = useQuery<any>({
+    queryKey: ["proof-pages"],
+    queryFn: () => apiFetch<any>(`/proof-pages`),
+    enabled: authed,
+  });
+  const disputes = useQuery<Array<{ status: string }>>({
+    queryKey: ["disputes"],
+    queryFn: () => apiFetch<Array<{ status: string }>>(`/disputes`),
+    enabled: authed,
+    retry: false,
+  });
+  const requests = useQuery<Array<{ status: string }>>({
+    queryKey: ["viewer-requests"],
+    queryFn: () => apiFetch<Array<{ status: string }>>(`/requests`),
+    enabled: authed,
+    retry: false,
+  });
+
+  const assessmentList = asArray<any>(assessments.data);
+  const proofList = asArray<any>(proofPages.data);
+
+  return {
+    pendingRequests: (requests.data ?? []).filter((request) => request.status === "pending").length,
+    activeDisputes: (disputes.data ?? []).filter((dispute) => dispute.status === "open" || dispute.status === "reviewed").length,
+    runningAssessments: assessmentList.filter((assessment) =>
+      ["pending", "processing", "in_progress", "retrying"].includes(assessment.status),
+    ).length,
+    draftProofs: proofList.filter((page) => page.status === "draft").length,
+    unassignedUploads: pool.data?.unassigned ?? 0,
+  };
+}
+
+function Badge({ count, kind }: { count: number; kind: "info" | "warn" | "alert" }) {
+  if (count <= 0) return null;
+  const style =
+    kind === "alert" ? "bg-[#8B2F2F] text-white" :
+    kind === "warn" ? "bg-[#C18A2E] text-white" :
+    "bg-[#315D8A] text-white";
+  return (
+    <span className={`ml-auto inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0 text-[10px] font-medium leading-tight ${style}`}>
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
 
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { clearToken } = useAuthStore();
+  const context = useSidebarContext();
 
-  const active = (href: string) => (href === "/app" ? location.pathname === "/app" : location.pathname === href || location.pathname.startsWith(`${href}/`));
+  const active = (href: string) =>
+    href === "/app" ? location.pathname === "/app" : location.pathname === href || location.pathname.startsWith(`${href}/`);
 
   return (
     <div className="flex min-h-screen bg-[#F7F4ED] text-[#161616]">
@@ -30,18 +143,24 @@ export default function Layout() {
 
         <nav className="px-3 py-4">
           <div className="space-y-1">
-            {items.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`flex items-center gap-3 rounded-md px-3 py-2 text-[13px] transition-colors ${
-                  active(item.href) ? "bg-[#161616] text-white" : "text-[#5C5C5C] hover:bg-[#F3EEE2] hover:text-[#161616]"
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.name}
-              </Link>
-            ))}
+            {items.map((item) => {
+              const count = item.getBadge ? item.getBadge(context) : 0;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-[13px] transition-colors ${
+                    active(item.href)
+                      ? "bg-[#161616] text-white"
+                      : "text-[#5C5C5C] hover:bg-[#F3EEE2] hover:text-[#161616]"
+                  }`}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span className="flex-1">{item.name}</span>
+                  {item.badgeKind ? <Badge count={count} kind={item.badgeKind} /> : null}
+                </Link>
+              );
+            })}
           </div>
         </nav>
 
