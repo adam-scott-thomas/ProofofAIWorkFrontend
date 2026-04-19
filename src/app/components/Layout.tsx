@@ -3,6 +3,7 @@ import {
   Activity,
   FolderKanban,
   Globe,
+  Layers,
   LayoutDashboard,
   LogOut,
   MessageSquare,
@@ -63,6 +64,7 @@ const items: NavItem[] = [
     badgeKind: "warn",
     getBadge: (ctx) => ctx.draftProofs,
   },
+  { name: "Portfolios", href: "/app/portfolios", icon: Layers },
 ];
 
 function useSidebarContext(): SidebarContext {

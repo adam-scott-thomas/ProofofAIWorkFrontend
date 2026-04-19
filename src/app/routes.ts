@@ -18,6 +18,8 @@ import Assessments from "./pages/Assessments";
 import Processing from "./pages/Processing";
 import Results from "./pages/Results";
 import ProofPages from "./pages/ProofPages";
+import Portfolios from "./pages/Portfolios";
+import PortfolioDetail from "./pages/PortfolioDetail";
 import WorkProfile from "./pages/WorkProfile";
 import PublicProofPage from "./pages/PublicProofPage";
 import Explore from "./pages/Explore";
@@ -48,6 +50,8 @@ export const router = createBrowserRouter([
       { path: "assessment/:id/processing", Component: Processing },
       { path: "assessment/:id/results", Component: Results },
       { path: "proof-pages", Component: ProofPages },
+      { path: "portfolios", Component: Portfolios },
+      { path: "portfolios/:id", Component: PortfolioDetail },
       { path: "work-profile", Component: WorkProfile },
     ],
   },
