@@ -16,10 +16,17 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
 
-  if (res.status === 401 && !redirecting) {
-    redirecting = true;
-    useAuthStore.getState().clearToken();
-    window.location.href = "/sign-in";
+  if (res.status === 401) {
+    // Single-flight: first 401 clears token and navigates; concurrent calls
+    // still throw so react-query can set error state without racing navigation.
+    if (!redirecting) {
+      redirecting = true;
+      useAuthStore.getState().clearToken();
+      // Preserve current path so the sign-in page can send the user back.
+      const next = window.location.pathname + window.location.search;
+      const target = next && next !== "/sign-in" ? `/sign-in?next=${encodeURIComponent(next)}` : "/sign-in";
+      window.location.href = target;
+    }
     throw new Error("Unauthorized");
   }
 

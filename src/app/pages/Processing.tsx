@@ -131,6 +131,7 @@ export default function Processing() {
     if (status === "complete" || status === "partial" || status === "failed") return;
     let live = true;
     const tick = async () => {
+      if (typeof document !== "undefined" && document.hidden) return;
       try {
         const data = await apiFetch<LiveResponse>(`/assessments/${id}/live-observations`);
         if (!live) return;
@@ -142,9 +143,15 @@ export default function Processing() {
     };
     tick();
     const interval = setInterval(tick, 2500);
+    // Pause polling while tab is backgrounded; fire immediately on focus.
+    const onVisibility = () => {
+      if (!document.hidden) tick();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       live = false;
       clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [assessmentQuery.data?.status, id]);
 

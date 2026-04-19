@@ -74,32 +74,40 @@ function useSidebarContext(): SidebarContext {
   const { isAuthenticated } = useAuthStore();
   const authed = isAuthenticated();
 
+  // staleTime keeps sidebar badges from hammering the API on every route
+  // transition; individual pages invalidate these keys when they mutate data.
+  const SIDEBAR_STALE_MS = 30_000;
   const pool = useQuery<{ unassigned?: number }>({
     queryKey: ["pool"],
     queryFn: () => apiFetch<{ unassigned?: number }>(`/pool`),
     enabled: authed,
+    staleTime: SIDEBAR_STALE_MS,
   });
   const assessments = useQuery<any>({
     queryKey: ["assessments"],
     queryFn: () => apiFetch<any>(`/assessments`),
     enabled: authed,
+    staleTime: SIDEBAR_STALE_MS,
   });
   const proofPages = useQuery<any>({
     queryKey: ["proof-pages"],
     queryFn: () => apiFetch<any>(`/proof-pages`),
     enabled: authed,
+    staleTime: SIDEBAR_STALE_MS,
   });
   const disputes = useQuery<Array<{ status: string }>>({
     queryKey: ["disputes"],
     queryFn: () => apiFetch<Array<{ status: string }>>(`/disputes`),
     enabled: authed,
     retry: false,
+    staleTime: SIDEBAR_STALE_MS,
   });
   const requests = useQuery<Array<{ status: string }>>({
     queryKey: ["viewer-requests"],
     queryFn: () => apiFetch<Array<{ status: string }>>(`/requests`),
     enabled: authed,
     retry: false,
+    staleTime: SIDEBAR_STALE_MS,
   });
 
   const assessmentList = asArray<any>(assessments.data);
