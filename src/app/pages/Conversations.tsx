@@ -1,98 +1,264 @@
-import { MessageSquare, Search } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import {
+  ArrowRight,
+  Calendar,
+  FolderKanban,
+  Loader2,
+  MessageSquare,
+  MessagesSquare,
+  Search,
+} from "lucide-react";
 import { Link } from "react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Card } from "../components/ui/card";
-import { useConversations } from "../../hooks/useApi";
-import { isoDate } from "../lib/poaw";
+import { Input } from "../components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import { useProjects } from "../../hooks/useApi";
+import { apiFetch } from "../../lib/api";
+import { asArray, isoDate } from "../lib/poaw";
+
+type Conversation = {
+  upload_id: string;
+  title: string;
+  source_format: string;
+  model_slugs: string[];
+  turn_count: number;
+  user_turn_count: number;
+  first_timestamp: number | null;
+  project_id: string | null;
+};
+
+type ListResponse = {
+  conversations: Conversation[];
+  total: number;
+  cursor: string | null;
+  has_more: boolean;
+};
 
 export default function Conversations() {
+  const { data: projectsData } = useProjects();
   const [query, setQuery] = useState("");
-  const { data, isLoading } = useConversations();
+  const [projectFilter, setProjectFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-[13px] text-[#6B6B66]">
-        Loading conversations...
-      </div>
-    );
-  }
-
-  const conversations = Array.isArray(data?.conversations) ? data.conversations : [];
-  const filtered = conversations.filter((conversation: any) => {
-    if (!query.trim()) return true;
-    const haystack = [
-      conversation.title,
-      conversation.source_format,
-      conversation.project_title,
-      conversation.project_id,
-      ...(conversation.model_slugs ?? []),
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-    return haystack.includes(query.trim().toLowerCase());
+  const params: Record<string, string> = {};
+  if (projectFilter !== "all") params.project_id = projectFilter;
+  if (sourceFilter !== "all") params.source_format = sourceFilter;
+  const listQuery = useQuery<ListResponse>({
+    queryKey: ["conversations", params],
+    queryFn: () => {
+      const qs = new URLSearchParams(params);
+      const querystring = qs.toString();
+      return apiFetch<ListResponse>(`/conversations${querystring ? `?${querystring}` : ""}`);
+    },
   });
+
+  const projects = asArray<{ id: string; title: string }>(projectsData);
+  const conversations = listQuery.data?.conversations ?? [];
+  const total = listQuery.data?.total ?? 0;
+
+  const sourceFormats = useMemo(() => {
+    const set = new Set<string>();
+    for (const conversation of conversations) if (conversation.source_format) set.add(conversation.source_format);
+    return Array.from(set).sort();
+  }, [conversations]);
+
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return conversations;
+    return conversations.filter((conversation) => {
+      const haystack = [
+        conversation.title,
+        conversation.source_format,
+        ...(conversation.model_slugs ?? []),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(needle);
+    });
+  }, [conversations, query]);
+
+  const projectTitleById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const project of projects) map.set(project.id, project.title);
+    return map;
+  }, [projects]);
+
+  const assignedCount = conversations.filter((conversation) => conversation.project_id).length;
 
   return (
     <div className="min-h-screen bg-[#F7F4ED] text-[#161616]">
       <header className="border-b border-[#D8D2C4] bg-[#FBF8F1]">
-        <div className="px-8 py-8">
-          <div className="text-[12px] uppercase tracking-[0.16em] text-[#6B6B66]">Conversation pool</div>
-          <h1 className="mt-2 text-3xl tracking-tight">Inspect parsed conversations.</h1>
-          <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-[#5C5C5C]">
-            This is the reader index. Open a conversation, inspect its turns, and move it into the right project.
+        <div className="px-8 py-7">
+          <div className="text-[12px] uppercase tracking-[0.16em] text-[#6B6B66]">Conversations</div>
+          <h1 className="mt-2 text-3xl tracking-tight">Every parsed transcript.</h1>
+          <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-[#5C5C5C]">
+            Indexed after parse. Open any row to read turns, tag specific moments, or verify what the evaluator
+            saw. Assigned conversations live in their project; unassigned ones are still in the pool.
           </p>
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Tile label="Indexed" value={total} />
+            <Tile label="On this page" value={conversations.length} />
+            <Tile label="Assigned" value={`${assignedCount}/${conversations.length}`} />
+          </div>
         </div>
       </header>
 
       <div className="px-8 py-8">
-        <Card className="border border-[#D8D2C4] bg-white p-4 shadow-sm">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6B6B66]" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search by title, format, project, or model"
-              className="w-full rounded-md border border-[#D8D2C4] bg-[#FBF8F1] px-10 py-2 text-sm outline-none"
-            />
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-5 flex flex-wrap items-center gap-3">
+            <div className="relative w-full sm:w-72">
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#6B6B66]" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search title, format, model..."
+                className="pl-7"
+              />
+            </div>
+            <Select value={projectFilter} onValueChange={setProjectFilter}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All projects</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {sourceFormats.length > 1 ? (
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Format" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All formats</SelectItem>
+                  {sourceFormats.map((format) => (
+                    <SelectItem key={format} value={format}>
+                      {format}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
           </div>
-        </Card>
 
-        <div className="mt-4 text-[13px] text-[#6B6B66]">{filtered.length} conversations</div>
-
-        <div className="mt-4 space-y-3">
-          {filtered.map((conversation: any) => (
-            <Link key={conversation.upload_id} to={`/app/conversations/${conversation.upload_id}`} className="block">
-              <Card className="border border-[#D8D2C4] bg-white p-5 shadow-sm transition-colors hover:bg-[#FBF8F1]">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex gap-3">
-                    <MessageSquare className="mt-0.5 h-4 w-4 text-[#315D8A]" />
-                    <div>
-                      <div className="text-[15px]">{conversation.title}</div>
-                      <div className="mt-1 text-[13px] text-[#5C5C5C]">
-                        {conversation.turn_count} turns • {conversation.user_turn_count} user turns • {conversation.source_format || "unknown format"}
-                      </div>
-                      <div className="mt-1 text-[12px] text-[#6B6B66]">
-                        {(conversation.model_slugs ?? []).slice(0, 3).join(", ") || "model unknown"}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right text-[12px] text-[#6B6B66]">
-                    <div>{conversation.project_id ? "assigned" : "unassigned"}</div>
-                    <div className="mt-1">{isoDate(conversation.first_timestamp ? conversation.first_timestamp * 1000 : null)}</div>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-          ))}
-
-          {filtered.length === 0 ? (
-            <Card className="border border-dashed border-[#D8D2C4] bg-[#FBF8F1] p-8 text-[14px] text-[#5C5C5C] shadow-sm">
-              No conversations match this search.
+          {listQuery.isLoading ? (
+            <div className="flex items-center gap-2 p-8 text-[13px] text-[#6B6B66]">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading conversations...
+            </div>
+          ) : filtered.length === 0 ? (
+            <Card className="border border-dashed border-[#D8D2C4] bg-[#FBF8F1] p-10 text-center text-[13px] text-[#5C5C5C]">
+              {conversations.length === 0 ? (
+                <>
+                  No parsed conversations.{" "}
+                  <Link to="/app/upload/new" className="underline">
+                    Upload some files
+                  </Link>{" "}
+                  to get started.
+                </>
+              ) : (
+                <>Nothing matches the current filter.</>
+              )}
             </Card>
-          ) : null}
+          ) : (
+            <div className="space-y-2">
+              {filtered.map((conversation) => (
+                <ConversationRow
+                  key={conversation.upload_id}
+                  conversation={conversation}
+                  projectTitle={conversation.project_id ? projectTitleById.get(conversation.project_id) ?? null : null}
+                />
+              ))}
+
+              {listQuery.data?.has_more ? (
+                <div className="pt-3 text-center text-[12px] text-[#6B6B66]">
+                  More conversations available · {conversations.length} of {total} shown.
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+function Tile({ label, value }: { label: string; value: string | number }) {
+  return (
+    <Card className="border border-[#D8D2C4] bg-white p-4">
+      <div className="text-[11px] uppercase tracking-[0.12em] text-[#6B6B66]">{label}</div>
+      <div className="mt-1 text-2xl tracking-tight">{value}</div>
+    </Card>
+  );
+}
+
+function ConversationRow({
+  conversation,
+  projectTitle,
+}: {
+  conversation: Conversation;
+  projectTitle: string | null;
+}) {
+  const assistantTurns = conversation.turn_count - conversation.user_turn_count;
+  const ts = conversation.first_timestamp ? conversation.first_timestamp * 1000 : null;
+  return (
+    <Link to={`/app/conversations/${conversation.upload_id}`}>
+      <Card className="group border border-[#D8D2C4] bg-white p-4 transition-colors hover:border-[#A88F5F] hover:bg-[#FBF8F1]">
+        <div className="flex items-center gap-4">
+          <MessageSquare className="h-4 w-4 shrink-0 text-[#315D8A]" />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              {conversation.project_id && projectTitle ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#D3E9D9] px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-[#1F6A3F]">
+                  <FolderKanban className="h-2.5 w-2.5" />
+                  {projectTitle}
+                </span>
+              ) : (
+                <span className="rounded-full bg-[#F8E5C2] px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-[#8A5F10]">
+                  Unassigned
+                </span>
+              )}
+              {conversation.source_format ? (
+                <span className="rounded-full border border-[#D8D2C4] px-2 py-0.5 text-[10px] tracking-[0.08em] text-[#6B6B66]">
+                  {conversation.source_format}
+                </span>
+              ) : null}
+            </div>
+            <div className="mt-1 truncate text-[14px] text-[#161616] group-hover:text-[#315D8A]">
+              {conversation.title}
+            </div>
+            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[#6B6B66]">
+              <span className="inline-flex items-center gap-1">
+                <MessagesSquare className="h-3 w-3" />
+                {conversation.turn_count} turns · {conversation.user_turn_count}u / {assistantTurns}a
+              </span>
+              {conversation.model_slugs.length > 0 ? (
+                <span>{conversation.model_slugs.slice(0, 3).join(", ")}</span>
+              ) : null}
+              {ts ? (
+                <span className="inline-flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {isoDate(ts)}
+                </span>
+              ) : null}
+            </div>
+          </div>
+          <ArrowRight className="h-4 w-4 text-[#6B6B66] opacity-0 transition-opacity group-hover:opacity-100" />
+        </div>
+      </Card>
+    </Link>
   );
 }
