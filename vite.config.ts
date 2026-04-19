@@ -23,8 +23,12 @@ export default defineConfig({
   server: {
     proxy: {
       "/api/v1": {
-        target: "http://localhost:8000",
+        // Forward to prod backend so dev can authenticate against real data
+        // without fighting CORS. Override with POAW_DEV_API_TARGET when you
+        // have a local backend running.
+        target: process.env.POAW_DEV_API_TARGET || "https://api.proofofaiwork.com",
         changeOrigin: true,
+        secure: true,
       },
     },
   },
