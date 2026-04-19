@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   Check,
   Copy,
+  Eye,
   ExternalLink,
   EyeOff,
   FileText,
@@ -11,13 +12,15 @@ import {
   Loader2,
   Lock,
   Plus,
+  Quote,
+  Scissors,
   Settings2,
   Share2,
   Trash2,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import {
@@ -38,7 +41,7 @@ import {
   useProofPages,
   usePublishProofPage,
 } from "../../hooks/useApi";
-import { apiDelete, apiPatch, apiPost } from "../../lib/api";
+import { apiDelete, apiFetch, apiPatch, apiPost } from "../../lib/api";
 import {
   asArray,
   assessmentTitle,
@@ -117,6 +120,7 @@ export default function ProofPages() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<ProofPage | null>(null);
   const [deleting, setDeleting] = useState<ProofPage | null>(null);
+  const [curating, setCurating] = useState<ProofPage | null>(null);
 
   const pages: ProofPage[] = asArray<ProofPage>(pagesData);
   const assessments = asArray<any>(assessmentsData);
@@ -209,6 +213,7 @@ export default function ProofPages() {
                   key={page.id}
                   page={page}
                   onEdit={() => setEditing(page)}
+                  onCurate={() => setCurating(page)}
                   onDelete={() => setDeleting(page)}
                   onPublish={() => {
                     publishProofPage.mutate(page.id, {
@@ -282,6 +287,8 @@ export default function ProofPages() {
 
       <EditDialog page={editing} onClose={() => setEditing(null)} onSaved={() => queryClient.invalidateQueries({ queryKey: ["proof-pages"] })} />
 
+      <ExcerptApprovalDialog page={curating} onClose={() => setCurating(null)} />
+
       <Dialog open={!!deleting} onOpenChange={(v) => !v && setDeleting(null)}>
         <DialogContent>
           <DialogHeader>
@@ -319,6 +326,7 @@ function SummaryTile({ label, value }: { label: string; value: number }) {
 function PageRow({
   page,
   onEdit,
+  onCurate,
   onDelete,
   onPublish,
   onUnpublish,
@@ -328,6 +336,7 @@ function PageRow({
 }: {
   page: ProofPage;
   onEdit: () => void;
+  onCurate: () => void;
   onDelete: () => void;
   onPublish: () => void;
   onUnpublish: () => void;
@@ -428,6 +437,10 @@ function PageRow({
           <Button variant="outline" size="sm" onClick={onEdit}>
             <Settings2 className="mr-2 h-3.5 w-3.5" />
             Edit
+          </Button>
+          <Button variant="outline" size="sm" onClick={onCurate}>
+            <Scissors className="mr-2 h-3.5 w-3.5" />
+            Approve excerpts
           </Button>
           {!published ? (
             <Button size="sm" onClick={onPublish} disabled={publishPending || !page.assessment_id}>
@@ -660,3 +673,225 @@ function formatDate(value: string | null) {
   if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
+
+type ExcerptDetail = {
+  id: string;
+  evidence_note_id: string;
+  observation_dimension: string | null;
+  claim: string | null;
+  excerpt_text: string;
+  redacted_text: string | null;
+  annotation: string | null;
+  is_visible: boolean;
+  display_order: number;
+  file_index: number | null;
+  source_file: string | null;
+};
+
+type ExcerptDraft = {
+  is_visible: boolean;
+  redacted_text: string;
+  annotation: string;
+};
+
+function ExcerptApprovalDialog({ page, onClose }: { page: ProofPage | null; onClose: () => void }) {
+  const open = !!page;
+  const [drafts, setDrafts] = useState<Record<string, ExcerptDraft>>({});
+  const [dirty, setDirty] = useState<Set<string>>(new Set());
+
+  const query = useQuery<ExcerptDetail[]>({
+    queryKey: ["proof-excerpts", page?.id],
+    queryFn: () => apiFetch<ExcerptDetail[]>(`/proof-pages/${page!.id}/excerpts`),
+    enabled: open && !!page,
+  });
+
+  useEffect(() => {
+    if (!query.data) return;
+    const next: Record<string, ExcerptDraft> = {};
+    for (const excerpt of query.data) {
+      next[excerpt.id] = {
+        is_visible: excerpt.is_visible,
+        redacted_text: excerpt.redacted_text ?? "",
+        annotation: excerpt.annotation ?? "",
+      };
+    }
+    setDrafts(next);
+    setDirty(new Set());
+  }, [query.data]);
+
+  const save = useMutation({
+    mutationFn: () => {
+      if (!page) return Promise.reject(new Error("No page"));
+      const updates = Array.from(dirty)
+        .map((id) => {
+          const draft = drafts[id];
+          if (!draft) return null;
+          return {
+            id,
+            is_visible: draft.is_visible,
+            redacted_text: draft.redacted_text,
+            annotation: draft.annotation,
+          };
+        })
+        .filter(Boolean);
+      return apiPatch<ExcerptDetail[]>(`/proof-pages/${page.id}/excerpts`, { updates });
+    },
+    onSuccess: () => {
+      toast.success("Excerpts saved");
+      setDirty(new Set());
+      query.refetch();
+    },
+    onError: (error: any) => toast.error(error?.message ?? "Save failed"),
+  });
+
+  const patchDraft = (id: string, patch: Partial<ExcerptDraft>) => {
+    setDrafts((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
+    setDirty((prev) => new Set(prev).add(id));
+  };
+
+  const excerpts = query.data ?? [];
+  const grouped = useMemo(() => {
+    const groups = new Map<string, ExcerptDetail[]>();
+    for (const excerpt of excerpts) {
+      const key = excerpt.source_file || (excerpt.file_index != null ? `file ${excerpt.file_index}` : "Unsourced");
+      const list = groups.get(key) ?? [];
+      list.push(excerpt);
+      groups.set(key, list);
+    }
+    return Array.from(groups.entries());
+  }, [excerpts]);
+
+  const visibleCount = excerpts.filter((excerpt) => drafts[excerpt.id]?.is_visible).length;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Approve excerpts</DialogTitle>
+          <DialogDescription>
+            Grouped by source file. Each excerpt is hidden by default — check "Show publicly" to include it.
+            Redacted text replaces the original on the public page (must be ≤ original length).
+          </DialogDescription>
+        </DialogHeader>
+
+        {query.isLoading ? (
+          <div className="flex items-center gap-2 p-4 text-[13px] text-[#6B6B66]">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading excerpts...
+          </div>
+        ) : excerpts.length === 0 ? (
+          <div className="rounded-md border border-dashed border-[#D8D2C4] bg-[#FBF8F1] p-6 text-center text-[13px] text-[#5C5C5C]">
+            No excerpts yet. They're generated during assessment as evidence notes. If an assessment completed
+            with zero evidence notes, there's nothing to approve.
+          </div>
+        ) : (
+          <div className="max-h-[60vh] space-y-5 overflow-y-auto pr-2">
+            {grouped.map(([source, group]) => (
+              <div key={source}>
+                <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] text-[#6B6B66]">
+                  <FileText className="h-3 w-3" />
+                  {source}
+                  <span className="rounded-full bg-[#F3EEE2] px-1.5 py-0.5 text-[10px] text-[#6B6B66]">
+                    {group.length}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {group.map((excerpt) => {
+                    const draft = drafts[excerpt.id] ?? {
+                      is_visible: excerpt.is_visible,
+                      redacted_text: excerpt.redacted_text ?? "",
+                      annotation: excerpt.annotation ?? "",
+                    };
+                    const isDirty = dirty.has(excerpt.id);
+                    const tooLong = draft.redacted_text.length > excerpt.excerpt_text.length;
+                    return (
+                      <Card
+                        key={excerpt.id}
+                        className={`border p-3 ${draft.is_visible ? "border-[#A88F5F] bg-white" : "border-[#D8D2C4] bg-[#FBF8F1]"}`}
+                      >
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                          {excerpt.observation_dimension ? (
+                            <span className="rounded-full bg-[#DCE4F0] px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-[#315D8A]">
+                              {excerpt.observation_dimension}
+                            </span>
+                          ) : null}
+                          {excerpt.claim ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-[#6B6B66]">
+                              <Quote className="h-3 w-3" />
+                              {excerpt.claim}
+                            </span>
+                          ) : null}
+                          <label className="ml-auto inline-flex cursor-pointer items-center gap-2 text-[11px] text-[#161616]">
+                            <input
+                              type="checkbox"
+                              checked={draft.is_visible}
+                              onChange={(event) => patchDraft(excerpt.id, { is_visible: event.target.checked })}
+                            />
+                            <span className="inline-flex items-center gap-1">
+                              {draft.is_visible ? <Eye className="h-3 w-3 text-[#1F6A3F]" /> : <EyeOff className="h-3 w-3 text-[#6B6B66]" />}
+                              {draft.is_visible ? "Show publicly" : "Hidden"}
+                            </span>
+                          </label>
+                        </div>
+                        <blockquote className="whitespace-pre-wrap rounded-md border border-[#EAE3CF] bg-[#FBF8F1] p-2 text-[12px] leading-relaxed text-[#2A2A28]">
+                          {excerpt.excerpt_text}
+                        </blockquote>
+                        <div className="mt-2 grid gap-2 md:grid-cols-2">
+                          <div>
+                            <label className="text-[10px] uppercase tracking-[0.1em] text-[#6B6B66]">
+                              Redacted replacement (optional)
+                            </label>
+                            <Textarea
+                              value={draft.redacted_text}
+                              onChange={(event) => patchDraft(excerpt.id, { redacted_text: event.target.value })}
+                              rows={3}
+                              placeholder="Strip sensitive detail. Leave blank to show the original."
+                              className={`mt-1 text-[12px] ${tooLong ? "border-[#8B2F2F]" : ""}`}
+                            />
+                            <div className={`mt-1 text-[10px] ${tooLong ? "text-[#8B2F2F]" : "text-[#6B6B66]"}`}>
+                              {draft.redacted_text.length} / {excerpt.excerpt_text.length} chars
+                              {tooLong ? " · too long — redacted text must be ≤ original" : null}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-[10px] uppercase tracking-[0.1em] text-[#6B6B66]">Annotation</label>
+                            <Textarea
+                              value={draft.annotation}
+                              onChange={(event) => patchDraft(excerpt.id, { annotation: event.target.value })}
+                              rows={3}
+                              placeholder="Optional context you want viewers to see with this excerpt."
+                              className="mt-1 text-[12px]"
+                            />
+                          </div>
+                        </div>
+                        {isDirty ? (
+                          <div className="mt-1 inline-flex items-center gap-1 text-[10px] text-[#A8741A]">
+                            <AlertTriangle className="h-3 w-3" />
+                            Unsaved
+                          </div>
+                        ) : null}
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <DialogFooter>
+          <div className="mr-auto text-[11px] text-[#6B6B66]">
+            {visibleCount} of {excerpts.length} visible ·{" "}
+            {dirty.size > 0 ? `${dirty.size} unsaved` : "saved"}
+          </div>
+          <Button variant="ghost" onClick={onClose}>Close</Button>
+          <Button disabled={save.isPending || dirty.size === 0} onClick={() => save.mutate()}>
+            {save.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+            Save {dirty.size > 0 ? `(${dirty.size})` : ""}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
