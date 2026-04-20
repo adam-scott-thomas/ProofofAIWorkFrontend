@@ -78,7 +78,7 @@ export default function Upload() {
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [taskContext, setTaskContext] = useState("");
   const [provenance, setProvenance] = useState<Provenance>("self_submitted");
-  const [consentShare, setConsentShare] = useState(false);
+  const [consentShare, setConsentShare] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
