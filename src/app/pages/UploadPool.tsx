@@ -276,7 +276,7 @@ export default function UploadPool() {
             <Button
               disabled={aiCluster.isPending}
               onClick={() =>
-                aiCluster.mutate(undefined, {
+                aiCluster.mutate({ tier: "free" }, {
                   onSuccess: (result: any) => {
                     setClusterOpen(false);
                     const count = result?.projects?.length ?? 0;

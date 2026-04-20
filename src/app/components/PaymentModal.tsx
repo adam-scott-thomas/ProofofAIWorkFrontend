@@ -82,7 +82,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
     if (options?.runCluster) {
       // Coupon + crypto flows only create/grant the unlock. They still need
       // the paid clustering request after the payment record is visible.
-      await apiPost("/projects/ai-cluster", {});
+      await apiPost("/projects/ai-cluster", { tier: "paid" });
     }
   };
 

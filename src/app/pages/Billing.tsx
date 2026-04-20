@@ -25,8 +25,8 @@ import SquarePaymentForm from "../components/SquarePaymentForm";
 
 const MODEL_TIERS = [
   { id: "free", label: "Standard", model: "GPT-4o Mini", desc: "Fast, good for most work", icon: Zap },
-  { id: "paid", label: "Enhanced", model: "GPT-4o", desc: "Deeper analysis, better judgment calls", icon: Shield },
-  { id: "premium", label: "Premium", model: "OpenAI o3", desc: "Deep reasoning — maximum quality", icon: Crown },
+  { id: "paid", label: "Enhanced", model: "GPT-5.4", desc: "Sharper grouping and better judgment calls", icon: Shield },
+  { id: "premium", label: "Premium", model: "Claude Opus", desc: "Maximum-quality reasoning for the hardest grouping jobs", icon: Crown },
 ] as const;
 
 type CardDialogMode = "save" | "subscribe" | null;
@@ -47,6 +47,7 @@ export default function Billing() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [cryptoInvoiceId, setCryptoInvoiceId] = useState<string | null>(null);
   const [cryptoInvoiceUrl, setCryptoInvoiceUrl] = useState<string | null>(null);
+  const [cryptoFeature, setCryptoFeature] = useState<string | null>(null);
 
   const { data: cryptoStatus } = useCryptoStatus(cryptoInvoiceId);
 
@@ -58,9 +59,14 @@ export default function Billing() {
       setCardDialogMode(null);
       setCryptoInvoiceId(null);
       setCryptoInvoiceUrl(null);
-      setSuccessMsg("Crypto payment confirmed! Feature activated.");
+      setSuccessMsg(
+        cryptoFeature === "ai_sort"
+          ? "Crypto payment confirmed. Premium AI grouping is unlocked on this account."
+          : "Crypto payment confirmed! Feature activated."
+      );
+      setCryptoFeature(null);
     }
-  }, [cryptoStatus, cryptoInvoiceId, queryClient]);
+  }, [cryptoStatus, cryptoFeature, cryptoInvoiceId, queryClient]);
 
   // Poll crypto status every 10s while waiting
   useEffect(() => {
@@ -126,12 +132,29 @@ export default function Billing() {
 
   const handleCryptoSubscribe = () => {
     setSuccessMsg(null);
+    setCryptoFeature("subscription");
     cryptoInvoiceMutation.mutate(
       { feature: "subscription" },
       {
         onSuccess: (data) => {
           setCryptoInvoiceId(data.invoice_id);
           setCryptoInvoiceUrl(data.invoice_url);
+        },
+      },
+    );
+  };
+
+  const handleCryptoFeaturePurchase = (feature: string, successMessage: string) => {
+    setSuccessMsg(null);
+    setCryptoFeature(feature);
+    cryptoInvoiceMutation.mutate(
+      { feature },
+      {
+        onSuccess: (data) => {
+          setCryptoInvoiceId(data.invoice_id);
+          setCryptoInvoiceUrl(data.invoice_url);
+          window.open(data.invoice_url, "_blank");
+          setSuccessMsg(successMessage);
         },
       },
     );
@@ -268,14 +291,14 @@ export default function Billing() {
           <p className="text-[13px] text-[#717182] mb-5">Pay only for what you use.</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {[
-              { icon: Sparkles, label: "AI Sort", price: "$5", desc: "AI-cluster your conversations" },
+              { icon: Sparkles, label: "AI Sort", price: "$5", desc: "Unlock GPT-5.4 / Opus grouping", feature: "ai_sort" },
               { icon: Zap, label: "Full Assessment", price: "$7", desc: "Forensic evaluation + scores" },
               { icon: Lock, label: "Private Mode", price: "$7", desc: "Keep your proof page private" },
               { icon: Crown, label: "Premium Polish", price: "$3", desc: "Enhanced profile presentation" },
               { icon: RefreshCw, label: "Rerun", price: "$3", desc: "Re-evaluate an assessment" },
               { icon: Download, label: "Export Packet", price: "$4", desc: "Download full evidence export" },
               { icon: Briefcase, label: "Career Add-ons", price: "$3–4", desc: "Resume, LinkedIn, cover letter" },
-            ].map(({ icon: Icon, label, price, desc }) => (
+            ].map(({ icon: Icon, label, price, desc, feature }) => (
               <div
                 key={label}
                 className="rounded-lg border border-[rgba(0,0,0,0.08)] bg-[#FAFAFA] p-4 flex flex-col gap-2"
@@ -290,9 +313,18 @@ export default function Billing() {
                   variant="outline"
                   size="sm"
                   className="mt-auto w-full text-[12px]"
-                  onClick={() => toast.info("Coming soon")}
+                  onClick={() => {
+                    if (feature === "ai_sort") {
+                      handleCryptoFeaturePurchase(
+                        "ai_sort",
+                        "NOWPayments invoice opened for premium AI grouping. Once it confirms, run GPT-5.4 / Opus grouping from the dashboard."
+                      );
+                      return;
+                    }
+                    toast.info("Coming soon");
+                  }}
                 >
-                  Buy
+                  {feature === "ai_sort" ? "Unlock" : "Buy"}
                 </Button>
               </div>
             ))}

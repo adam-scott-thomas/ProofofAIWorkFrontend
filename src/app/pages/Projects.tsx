@@ -289,7 +289,7 @@ export default function Projects() {
             <Button
               disabled={aiCluster.isPending}
               onClick={() =>
-                aiCluster.mutate(undefined, {
+                aiCluster.mutate({ tier: "free" }, {
                   onSuccess: (result: any) => {
                     const count = result?.projects?.length ?? 0;
                     toast.success(`Created ${count} project${count === 1 ? "" : "s"}`);

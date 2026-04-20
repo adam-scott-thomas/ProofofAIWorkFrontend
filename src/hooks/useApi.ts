@@ -206,8 +206,8 @@ export const useAiClusterEstimate = () =>
 export const useAiCluster = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body?: { source_id?: string }) =>
-      apiPost<any>("/projects/cluster", body ?? {}),
+    mutationFn: (body?: { source_id?: string; tier?: "free" | "paid" | "premium" }) =>
+      apiPost<any>("/projects/ai-cluster", body ?? {}),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),
   });
 };

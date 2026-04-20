@@ -375,7 +375,7 @@ export default function Dashboard() {
                 <Button
                   type="button"
                   onClick={() =>
-                    aiCluster.mutate(undefined, {
+                    aiCluster.mutate({ tier: "free" }, {
                       onSuccess: (result: any) => {
                         const count = result?.projects?.length ?? 0;
                         toast.success(`Grouping created ${count} project${count === 1 ? "" : "s"}`);
@@ -401,6 +401,12 @@ export default function Dashboard() {
                   <Button type="button" variant="outline" className="border-[rgba(255,255,255,0.18)] bg-transparent text-white hover:bg-[rgba(255,255,255,0.08)] hover:text-white">
                     <UploadIcon className="mr-2 h-4 w-4" />
                     Feed the pool
+                  </Button>
+                </Link>
+                <Link to="/app/settings/billing">
+                  <Button type="button" variant="outline" className="border-[rgba(255,255,255,0.18)] bg-transparent text-white hover:bg-[rgba(255,255,255,0.08)] hover:text-white">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Unlock GPT-5.4 / Opus
                   </Button>
                 </Link>
               </div>
