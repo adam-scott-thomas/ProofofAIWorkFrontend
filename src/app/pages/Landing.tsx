@@ -200,6 +200,8 @@ export default function Landing() {
             <Link to="/students">For students</Link>
             <Link to="/employers">For employers</Link>
             <Link to="/how-it-works">How it works</Link>
+            <Link to="/quiz">Quiz</Link>
+            <Link to="/blog">Blog</Link>
           </nav>
           <div className="po-nav-actions">
             <button
@@ -670,6 +672,8 @@ turn_01HX4E · user · 2026-04-12T09:20:11Z
           <div>
             <div className="po-footer-head">Product</div>
             <a href="#how">How it works</a>
+            <Link to="/proof-of-ai-work">Proof of AI Work</Link>
+            <Link to="/ai-portfolio">AI portfolio</Link>
             <Link to="/sign-in">Sign in</Link>
             <a href="#measure">Scoring methodology</a>
             <a href="#pillars">Integrity chain</a>
@@ -678,12 +682,14 @@ turn_01HX4E · user · 2026-04-12T09:20:11Z
             <div className="po-footer-head">Trust</div>
             <a href="#pillars">Evidence standard</a>
             <Link to="/explore">Public explore</Link>
+            <Link to="/blog">Blog</Link>
             <span>Security</span>
           </div>
           <div>
             <div className="po-footer-head">Flow</div>
             <Link to="/upload">Start your proof</Link>
             <Link to="/explore">Browse proof</Link>
+            <Link to="/quiz">Take the quiz</Link>
             <span>Contact</span>
           </div>
         </div>

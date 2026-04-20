@@ -338,9 +338,10 @@ function SummaryTile({ label, value }: { label: string; value: number }) {
   );
 }
 
-function ogImageUrl(slugOrToken: string) {
+function ogImageUrl(slugOrToken: string, version?: number, updatedAt?: string | null) {
   const apiHost = import.meta.env.VITE_API_URL || "";
-  return `${apiHost.replace(/\/$/, "")}/api/v1/p/${slugOrToken}/og.png`;
+  const stamp = updatedAt ? Date.parse(updatedAt) || updatedAt : version || "1";
+  return `${apiHost.replace(/\/$/, "")}/api/v1/p/${slugOrToken}/og.png?v=${encodeURIComponent(String(stamp))}`;
 }
 
 function PageRow({
@@ -390,7 +391,7 @@ function PageRow({
             className="relative block h-20 w-36 shrink-0 overflow-hidden rounded-md border border-[#D8D2C4] bg-[#FBF8F1]"
           >
             <img
-              src={ogImageUrl(page.slug || page.public_token)}
+              src={ogImageUrl(page.slug || page.public_token, page.version, page.updated_at)}
               alt=""
               loading="lazy"
               className="h-full w-full object-cover"

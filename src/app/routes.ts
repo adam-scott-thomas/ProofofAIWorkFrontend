@@ -27,6 +27,11 @@ import Explore, { DirectoryRedirect } from "./pages/Explore";
 import Students from "./pages/Students";
 import Employers from "./pages/Employers";
 import HowItWorks from "./pages/HowItWorks";
+import ProofOfAIWorkPage from "./pages/ProofOfAIWorkPage";
+import AIPortfolioPage from "./pages/AIPortfolioPage";
+import BlogIndex from "./pages/BlogIndex";
+import BlogArticle from "./pages/BlogArticle";
+import Quiz from "./pages/Quiz";
 import Search from "./pages/Search";
 import Webhooks from "./pages/Webhooks";
 import Settings from "./pages/Settings";
@@ -46,6 +51,14 @@ export const router = createBrowserRouter([
   { path: "/students", Component: Students, ErrorBoundary },
   { path: "/employers", Component: Employers, ErrorBoundary },
   { path: "/how-it-works", Component: HowItWorks, ErrorBoundary },
+  { path: "/proof-of-ai-work", Component: ProofOfAIWorkPage, ErrorBoundary },
+  { path: "/ai-portfolio", Component: AIPortfolioPage, ErrorBoundary },
+  { path: "/blog", Component: BlogIndex, ErrorBoundary },
+  { path: "/blog/:slug", Component: BlogArticle, ErrorBoundary },
+  { path: "/quiz", Component: Quiz, ErrorBoundary },
+  { path: "/quiz/:result", Component: Quiz, ErrorBoundary },
+  { path: "/ai-archetype-quiz", Component: Quiz, ErrorBoundary },
+  { path: "/ai-archetype-quiz/:result", Component: Quiz, ErrorBoundary },
   {
     path: "/app",
     Component: protect(Layout),
