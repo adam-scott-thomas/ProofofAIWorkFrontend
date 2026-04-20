@@ -50,9 +50,10 @@ const ACCEPT_ATTR = ACCEPTED_EXTS.map((ext) => `.${ext}`).join(",");
 
 function predictClass(name: string): FileEntry["predictedClass"] {
   const lower = name.toLowerCase();
-  if (lower.endsWith(".json") || lower.endsWith(".jsonl") || lower.endsWith(".zip")) return "B";
-  if (lower.endsWith(".md") || lower.endsWith(".pdf") || lower.endsWith(".html")) return "C";
-  if (lower.endsWith(".txt") || lower.endsWith(".log") || lower.endsWith(".csv")) return "C";
+  if (lower.endsWith(".json") || lower.endsWith(".jsonl") || lower.endsWith(".zip")) return "A";
+  if (lower.endsWith(".txt") || lower.endsWith(".md") || lower.endsWith(".log")) return "C";
+  if (lower.endsWith(".csv") || lower.endsWith(".html") || lower.endsWith(".yaml") || lower.endsWith(".yml")) return "C";
+  if (lower.endsWith(".pdf")) return "D";
   return "D";
 }
 
