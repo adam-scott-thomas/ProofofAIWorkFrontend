@@ -41,7 +41,6 @@ import {
   useAssessments,
   useCreateProofPage,
   useProofPages,
-  usePublishProofPage,
 } from "../../hooks/useApi";
 import { apiDelete, apiFetch, apiPatch, apiPost } from "../../lib/api";
 import {
@@ -103,8 +102,8 @@ function publishWarnings(page: ProofPage): Warning[] {
   if (!page.summary || page.summary.trim().length < 10) {
     warnings.push({ severity: "medium", text: "No summary. Add a one-sentence framing." });
   }
-  if (page.visibility === "public") {
-    warnings.push({ severity: "info", text: "Public visibility lists this page in the directory once it opens." });
+  if (page.visibility !== "public") {
+    warnings.push({ severity: "info", text: "Publishing will switch this page to public visibility and list it in discovery." });
   }
   if (!page.assessment_id) {
     warnings.push({ severity: "medium", text: "No assessment linked. Results pages can't render trust metadata." });
@@ -116,7 +115,6 @@ export default function ProofPages() {
   const { data: pagesData, isLoading, refetch } = useProofPages() as any;
   const { data: assessmentsData } = useAssessments();
   const createProofPage = useCreateProofPage();
-  const publishProofPage = usePublishProofPage();
   const queryClient = useQueryClient();
 
   const [creating, setCreating] = useState(false);
@@ -158,6 +156,20 @@ export default function ProofPages() {
       queryClient.invalidateQueries({ queryKey: ["proof-pages"] });
     },
     onError: (error: any) => toast.error(error?.message ?? "Directory update failed"),
+  });
+
+  const publishPage = async (page: ProofPage) => {
+    if (page.visibility !== "public") {
+      await apiPatch(`/proof-pages/${page.id}`, {
+        visibility: "public",
+      });
+    }
+    await apiPost(`/proof-pages/${page.id}/publish`, {});
+    await apiPost(`/directory/${page.id}/opt-in`, {});
+  };
+
+  const publishProofPage = useMutation({
+    mutationFn: publishPage,
   });
 
   if (isLoading) {
@@ -218,10 +230,11 @@ export default function ProofPages() {
                   onCurate={() => setCurating(page)}
                   onDelete={() => setDeleting(page)}
                   onPublish={() => {
-                    publishProofPage.mutate(page.id, {
+                    publishProofPage.mutate(page, {
                       onSuccess: () => {
-                        toast.success("Proof page published");
+                        toast.success("Proof page published and listed in discovery");
                         queryClient.invalidateQueries({ queryKey: ["proof-pages"] });
+                        queryClient.invalidateQueries({ queryKey: ["directory-status"] });
                       },
                       onError: (error: any) => toast.error(error?.message ?? "Publish failed"),
                     });
@@ -970,4 +983,3 @@ function ExcerptApprovalDialog({ page, onClose }: { page: ProofPage | null; onCl
     </Dialog>
   );
 }
-

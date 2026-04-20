@@ -76,10 +76,11 @@ export default function StudentResults() {
         headline: assessment?.task_context
           ? `AI Work Report — ${assessment.task_context.split("\n")[1]?.replace("Assignment: ", "") || "Assignment"}`
           : "AI Work Report",
-        visibility: "link",
+        visibility: "public",
       });
       // Publish it
       await apiPost<any>(`/proof-pages/${page.id}/publish`, {});
+      await apiPost<any>(`/directory/${page.id}/opt-in`, {});
       return page;
     },
     onSuccess: (page) => {
@@ -296,7 +297,7 @@ export default function StudentResults() {
                 </h3>
                 <p className="mb-4 text-[13px] text-[#717182]">
                   Publish a shareable link your professor can view — no account needed on their end.
-                  Shows your scores, the evidence trail, and how you used AI.
+                  Shows your scores, the evidence trail, how you used AI, and lists the page in discovery.
                 </p>
                 <Button
                   onClick={() => publishMutation.mutate()}

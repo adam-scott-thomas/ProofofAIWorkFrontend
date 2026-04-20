@@ -76,7 +76,7 @@ export default function Explore() {
               <div className="text-[12px] uppercase tracking-[0.16em] text-[#6B6B66]">Directory</div>
               <h1 className="mt-1 text-3xl tracking-tight">Browse published proof pages.</h1>
               <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-[#5C5C5C]">
-                Proof pages published with public visibility and opted into the directory show up here.
+                Proof pages published with public visibility show up here automatically.
                 Each card links to a viewer-facing page with observations, evidence, and trust metadata.
               </p>
             </div>
@@ -156,7 +156,7 @@ export default function Explore() {
             {filtered.length === 0 ? (
               <Card className="border border-dashed border-[#D8D2C4] bg-[#FBF8F1] p-10 text-center text-[13px] text-[#5C5C5C]">
                 {entries.length === 0
-                  ? "No proof pages opted into the directory yet."
+                  ? "No proof pages are in the directory yet."
                   : "Nothing matches the current filter."}
               </Card>
             ) : (
@@ -234,7 +234,7 @@ function GatedView({ data }: { data: DirectoryGated }) {
 
       <div className="mt-6 grid gap-3 md:grid-cols-3">
         <Hint icon={Sparkles} title="Publish a proof" body="Every new publication moves the needle." />
-        <Hint icon={Filter} title="Opt into the directory" body="Publishing is not enough — list it too." />
+        <Hint icon={Filter} title="Publish publicly" body="Public proof pages are added to discovery automatically." />
         <Hint icon={Globe} title="Share your link" body="Link-visibility pages are already viewable via /p/{slug}." />
       </div>
     </Card>
