@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, Navigate } from "react-router";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -14,85 +14,113 @@ import { Input } from "../components/ui/input";
 import { apiFetch } from "../../lib/api";
 import "./Explore.css";
 
-type DirectorySignal = {
-  id?: string;
-  label?: string;
-  strength?: number;
-  category?: string;
+type ExploreSignal = {
+  id?: string | null;
+  label?: string | null;
+  strength?: number | null;
+  category?: string | null;
 };
 
-type DirectoryEntry = {
+type ExploreArchetype = {
+  id: string;
+  label: string;
+  summary: string;
+};
+
+type ExploreScores = {
+  hls?: number | null;
+  ael?: number | null;
+  cai?: number | null;
+};
+
+type ExploreSampleSize = {
+  sessions?: number;
+  uploads?: number;
+};
+
+type ExploreEvidenceClasses = {
+  A_plus?: number;
+  A?: number;
+  B?: number;
+  C?: number;
+  D?: number;
+};
+
+type ExploreEntry = {
   public_token: string;
   slug: string | null;
+  url: string;
   headline: string | null;
   summary: string | null;
-  signals: DirectorySignal[];
-  url: string;
+  published_at: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  overall_score: number | null;
+  archetype: ExploreArchetype | null;
+  scores: ExploreScores;
+  confidence: string | null;
+  sample_size: ExploreSampleSize;
+  evidence_classes: ExploreEvidenceClasses;
+  signals: ExploreSignal[];
 };
 
-type DirectoryOpen = {
+type ExploreOpen = {
   enabled: true;
   total_published: number;
-  entries: DirectoryEntry[];
+  threshold: number;
+  entries: ExploreEntry[];
   signal_clusters: Record<string, number>;
+  archetype_counts: Record<string, number>;
   filters: { signal: string | null; limit: number; offset: number };
 };
 
-type DirectoryGated = {
+type ExploreGatedState = {
   enabled: false;
   total_published: number;
   threshold: number;
   message?: string;
 };
 
-type DirectoryResponse = DirectoryOpen | DirectoryGated;
+type ExploreResponse = ExploreOpen | ExploreGatedState;
 
-type PublicObservation = {
-  dimension: string | null;
-  score: number | null;
-  label: string | null;
-};
-
-type TrustPanel = {
-  sample_size?: {
-    sessions?: number;
-    uploads?: number;
-  };
-  evidence_classes?: {
-    A_plus?: number;
-    A?: number;
-    B?: number;
-    C?: number;
-    D?: number;
-  };
-  dimensions_evaluated?: number;
-  dimensions_skipped?: number;
-};
-
-type PublicProofResponse = {
-  public_token: string;
+type LeaderboardRow = {
   slug: string | null;
-  project_title: string | null;
-  project_description: string | null;
+  public_token: string;
+  url: string;
   headline: string | null;
-  summary: string | null;
-  published_at: string | null;
-  observations: PublicObservation[];
-  trust_panel: TrustPanel;
+  display_name: string | null;
+  archetype: string | null;
+  overall_score?: number | null;
+  score?: number | null;
 };
 
-type DetailMetric = {
-  key: string;
-  metricScore: number | null;
-  strongestDimension: string | null;
-  strongestScore: number | null;
-  sessions: number;
-  uploads: number;
-  evidenceRich: number;
-  evidenceMixed: number;
-  evidenceLight: number;
-  signalCount: number;
-  detail?: PublicProofResponse;
+type ExploreLeaderboard = {
+  overall: LeaderboardRow[];
+  hls: LeaderboardRow[];
+  ael: LeaderboardRow[];
+  cai: LeaderboardRow[];
+};
+
+type ExploreTopSignal = {
+  id: string;
+  label: string;
+  count: number;
+};
+
+type ExploreRecentPublish = {
+  slug: string | null;
+  public_token: string;
+  headline: string | null;
+  display_name: string | null;
+  published_at: string | null;
+  url: string;
+};
+
+type ExploreInsights = {
+  archetype_counts: Record<string, number>;
+  score_bands: Record<string, number>;
+  top_signals: ExploreTopSignal[];
+  recent_publishes: ExploreRecentPublish[];
 };
 
 function fmtInt(value?: number | null) {
@@ -100,24 +128,15 @@ function fmtInt(value?: number | null) {
 }
 
 function score100(value?: number | null) {
-  if (value == null) return null;
-  return value <= 1 ? Math.round(value * 100) : Math.round(value);
+  return value == null ? "—" : `${Math.round(value)}/100`;
 }
 
-function scoreLabel(value?: number | null) {
-  const scored = score100(value);
-  return scored == null ? "—" : `${scored}/100`;
+function rawScore(value?: number | null) {
+  return value == null ? "—" : fmtInt(value);
 }
 
-function displaySignal(signal: DirectorySignal) {
-  return signal.label || signal.id || "signal";
-}
-
-function formatDimension(value?: string | null) {
-  if (!value) return "No scored dimensions yet";
-  return value
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+function displayTitle(entry: ExploreEntry | ExploreRecentPublish | LeaderboardRow) {
+  return entry.display_name || entry.headline || "Untitled public proof";
 }
 
 function formatDate(value?: string | null) {
@@ -127,40 +146,11 @@ function formatDate(value?: string | null) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function evidenceBreakdown(trustPanel?: TrustPanel) {
-  const evidence = trustPanel?.evidence_classes || {};
-  const rich = (evidence.A_plus ?? 0) + (evidence.A ?? 0);
-  const mixed = evidence.B ?? 0;
-  const light = (evidence.C ?? 0) + (evidence.D ?? 0);
-  return { rich, mixed, light };
+function signalName(signal: ExploreSignal) {
+  return signal.label || signal.id || "signal";
 }
 
-function buildMetric(entry: DirectoryEntry, detail?: PublicProofResponse): DetailMetric {
-  const observations = detail?.observations ?? [];
-  const scored = observations.filter((item) => item.score != null);
-  const metricScore =
-    scored.length > 0
-      ? Math.round(scored.reduce((sum, item) => sum + (score100(item.score) ?? 0), 0) / scored.length)
-      : null;
-  const strongest = [...scored].sort((a, b) => (score100(b.score) ?? 0) - (score100(a.score) ?? 0))[0] ?? null;
-  const breakdown = evidenceBreakdown(detail?.trust_panel);
-
-  return {
-    key: entry.slug ?? entry.public_token,
-    metricScore,
-    strongestDimension: strongest?.dimension ?? null,
-    strongestScore: strongest?.score ?? null,
-    sessions: detail?.trust_panel?.sample_size?.sessions ?? 0,
-    uploads: detail?.trust_panel?.sample_size?.uploads ?? 0,
-    evidenceRich: breakdown.rich,
-    evidenceMixed: breakdown.mixed,
-    evidenceLight: breakdown.light,
-    signalCount: entry.signals?.length ?? 0,
-    detail,
-  };
-}
-
-function buildAtlas(signalClusters: Record<string, number>) {
+function sortSignalAtlas(signalClusters: Record<string, number>) {
   const total = Object.values(signalClusters).reduce((sum, count) => sum + count, 0);
   return Object.entries(signalClusters)
     .map(([signal, count]) => ({
@@ -171,22 +161,21 @@ function buildAtlas(signalClusters: Record<string, number>) {
     .sort((a, b) => b.count - a.count);
 }
 
-function boardItems(entries: DirectoryEntry[], metrics: Record<string, DetailMetric>) {
-  const withMetrics = entries
-    .map((entry) => ({ entry, metric: metrics[entry.slug ?? entry.public_token] }))
-    .filter((item) => item.metric);
-
+function evidenceSummary(evidence: ExploreEvidenceClasses) {
   return {
-    observed: [...withMetrics]
-      .sort((a, b) => (b.metric?.sessions ?? 0) - (a.metric?.sessions ?? 0))
-      .slice(0, 5),
-    evidence: [...withMetrics]
-      .sort((a, b) => (b.metric?.evidenceRich ?? 0) - (a.metric?.evidenceRich ?? 0))
-      .slice(0, 5),
-    signalDense: [...withMetrics]
-      .sort((a, b) => (b.metric?.signalCount ?? 0) - (a.metric?.signalCount ?? 0))
-      .slice(0, 5),
+    rich: (evidence.A_plus ?? 0) + (evidence.A ?? 0),
+    mixed: evidence.B ?? 0,
+    light: (evidence.C ?? 0) + (evidence.D ?? 0),
   };
+}
+
+function scoreBandCards(scoreBands: Record<string, number>) {
+  return [
+    { label: "90-100", count: scoreBands["90_100"] ?? 0, note: "elite public dossiers" },
+    { label: "80-89", count: scoreBands["80_89"] ?? 0, note: "strong command at scale" },
+    { label: "70-79", count: scoreBands["70_79"] ?? 0, note: "credible operating range" },
+    { label: "Under 70", count: scoreBands["under_70"] ?? 0, note: "emerging proof records" },
+  ];
 }
 
 export function DirectoryRedirect() {
@@ -197,25 +186,42 @@ export default function Explore() {
   const [signalFilter, setSignalFilter] = useState("");
   const [query, setQuery] = useState("");
 
-  const listQuery = useQuery<DirectoryResponse>({
-    queryKey: ["directory-public", signalFilter],
+  const listQuery = useQuery<ExploreResponse>({
+    queryKey: ["explore-public", signalFilter],
     queryFn: () =>
-      apiFetch<DirectoryResponse>(`/directory${signalFilter ? `?signal=${encodeURIComponent(signalFilter)}` : ""}`),
+      apiFetch<ExploreResponse>(`/directory/explore${signalFilter ? `?signal=${encodeURIComponent(signalFilter)}` : ""}`),
+  });
+
+  const isEnabled = listQuery.data?.enabled === true;
+
+  const leaderboardQuery = useQuery<ExploreLeaderboard>({
+    queryKey: ["explore-leaderboard"],
+    queryFn: () => apiFetch<ExploreLeaderboard>("/directory/explore/leaderboard"),
+    enabled: isEnabled,
+  });
+
+  const insightsQuery = useQuery<ExploreInsights>({
+    queryKey: ["explore-insights"],
+    queryFn: () => apiFetch<ExploreInsights>("/directory/explore/insights"),
+    enabled: isEnabled,
   });
 
   const data = listQuery.data;
-  const entries = data && data.enabled ? data.entries : [];
-  const signalClusters = data && data.enabled ? data.signal_clusters : {};
-  const atlas = useMemo(() => buildAtlas(signalClusters), [signalClusters]);
+  const openData = data && data.enabled ? data : null;
+  const entries = openData?.entries ?? [];
+  const atlas = useMemo(() => sortSignalAtlas(openData?.signal_clusters ?? {}), [openData]);
+  const archetypeCounts = openData?.archetype_counts ?? {};
 
   const filtered = useMemo(() => {
     if (!query.trim()) return entries;
     const needle = query.trim().toLowerCase();
     return entries.filter((entry) => {
       const haystack = [
+        entry.display_name,
         entry.headline,
         entry.summary,
-        ...(entry.signals || []).map((signal) => displaySignal(signal)),
+        entry.archetype?.label,
+        ...entry.signals.map((signal) => signalName(signal)),
       ]
         .filter(Boolean)
         .join(" ")
@@ -224,49 +230,30 @@ export default function Explore() {
     });
   }, [entries, query]);
 
-  const visibleEntries = filtered.slice(0, 12);
-
-  const detailQueries = useQueries({
-    queries: visibleEntries.map((entry) => ({
-      queryKey: ["public-proof-summary", entry.slug ?? entry.public_token],
-      queryFn: () => apiFetch<PublicProofResponse>(entry.url),
-      staleTime: 60_000,
-    })),
-  });
-
-  const metricsByEntry = useMemo(() => {
-    const map: Record<string, DetailMetric> = {};
-    visibleEntries.forEach((entry, index) => {
-      const key = entry.slug ?? entry.public_token;
-      map[key] = buildMetric(entry, detailQueries[index]?.data);
-    });
-    return map;
-  }, [visibleEntries, detailQueries]);
-
-  const featured = visibleEntries[0] ?? null;
-  const featuredMetric = featured ? metricsByEntry[featured.slug ?? featured.public_token] : null;
-  const boards = useMemo(() => boardItems(visibleEntries, metricsByEntry), [visibleEntries, metricsByEntry]);
+  const featured = filtered[0] ?? null;
+  const topSignals = insightsQuery.data?.top_signals ?? [];
+  const recentPublishes = insightsQuery.data?.recent_publishes ?? [];
+  const scoreBands = scoreBandCards(insightsQuery.data?.score_bands ?? {});
+  const archetypeAtlas = Object.entries(archetypeCounts)
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count);
 
   const aggregate = useMemo(() => {
-    const visibleMetrics = Object.values(metricsByEntry);
-    const observationMean =
-      visibleMetrics.filter((metric) => metric.metricScore != null).length > 0
-        ? Math.round(
-            visibleMetrics
-              .filter((metric) => metric.metricScore != null)
-              .reduce((sum, metric) => sum + (metric.metricScore ?? 0), 0) /
-              visibleMetrics.filter((metric) => metric.metricScore != null).length,
-          )
-        : null;
-    const sessions = visibleMetrics.reduce((sum, metric) => sum + metric.sessions, 0);
-    const uploads = visibleMetrics.reduce((sum, metric) => sum + metric.uploads, 0);
+    const scored = filtered.filter((entry) => entry.overall_score != null);
+    const medianScore = scored.length > 0
+      ? [...scored]
+          .map((entry) => entry.overall_score ?? 0)
+          .sort((a, b) => a - b)[Math.floor(scored.length / 2)]
+      : null;
+    const totalSessions = filtered.reduce((sum, entry) => sum + (entry.sample_size.sessions ?? 0), 0);
+    const totalUploads = filtered.reduce((sum, entry) => sum + (entry.sample_size.uploads ?? 0), 0);
     return {
-      observationMean,
-      sessions,
-      uploads,
-      signalsTracked: atlas.length,
+      medianScore,
+      totalSessions,
+      totalUploads,
+      archetypes: Object.keys(archetypeCounts).length,
     };
-  }, [metricsByEntry, atlas.length]);
+  }, [filtered, archetypeCounts]);
 
   return (
     <div className="explore-page">
@@ -288,18 +275,17 @@ export default function Explore() {
             <div>
               <div className="explore-eyebrow">
                 <Telescope className="h-3.5 w-3.5" />
-                Public explore · proof pages you can actually inspect
+                Public explore · published work profiles you can actually inspect
               </div>
               <h1 className="explore-title">
                 The public record of
                 <br />
-                people shipping work
+                people shipping with
                 <br />
-                <em>with evidence attached.</em>
+                <em>visible signal.</em>
               </h1>
               <p className="explore-subtitle">
-                Browse published proof pages, scan recurring work patterns, and open the underlying public dossiers.
-                This phase uses live public proof data already in the system: headlines, signals, observations, and trust panels.
+                Browse published public proofs, scan archetypes, compare HLS, AEL, and CAI, and open the underlying dossier. This is the live explore feed backed by public proof pages and completed work profiles.
               </p>
 
               <div className="explore-search-row">
@@ -308,12 +294,12 @@ export default function Explore() {
                   <Input
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search proof pages, summaries, signals..."
+                    placeholder="Search people, proof headlines, archetypes, signals..."
                   />
                 </div>
                 {featured ? (
                   <Link to={featured.url} className="explore-primary-link">
-                    Open featured proof <ArrowUpRight className="h-4 w-4" />
+                    Open featured dossier <ArrowUpRight className="h-4 w-4" />
                   </Link>
                 ) : null}
               </div>
@@ -339,11 +325,11 @@ export default function Explore() {
                 <span className="explore-live-pill">LIVE</span>
               </div>
               <div className="explore-stat-list">
-                <StatRow label="published proofs" value={fmtInt(data && data.enabled ? data.total_published : data?.total_published ?? 0)} />
-                <StatRow label="signals tracked" value={fmtInt(aggregate.signalsTracked)} />
-                <StatRow label="sessions surfaced" value={fmtInt(aggregate.sessions)} />
-                <StatRow label="uploads surfaced" value={fmtInt(aggregate.uploads)} />
-                <StatRow label="observation mean" value={aggregate.observationMean != null ? `${aggregate.observationMean}/100` : "pending"} />
+                <StatRow label="published proofs" value={fmtInt(openData?.total_published ?? data?.total_published ?? 0)} />
+                <StatRow label="median score" value={aggregate.medianScore != null ? score100(aggregate.medianScore) : "pending"} />
+                <StatRow label="archetypes visible" value={fmtInt(aggregate.archetypes)} />
+                <StatRow label="sessions surfaced" value={fmtInt(aggregate.totalSessions)} />
+                <StatRow label="uploads surfaced" value={fmtInt(aggregate.totalUploads)} />
               </div>
             </Card>
           </div>
@@ -368,30 +354,28 @@ export default function Explore() {
                   <div className="explore-feature-main">
                     <div className="explore-feature-meta">
                       <span>Featured dossier</span>
-                      <span>{formatDate(featuredMetric?.detail?.published_at)}</span>
+                      <span>{formatDate(featured.published_at)}</span>
                     </div>
                     <div className="explore-feature-score">
-                      <div className="explore-feature-score-label">Observed mean</div>
+                      <div className="explore-feature-score-label">Overall score</div>
                       <div className="explore-feature-score-value">
-                        {featuredMetric?.metricScore != null ? featuredMetric.metricScore : "—"}
+                        {featured.overall_score ?? "—"}
                         <span>/100</span>
                       </div>
                     </div>
-                    <h2>{featured.headline || featuredMetric?.detail?.project_title || "Untitled proof page"}</h2>
+                    <h2>{displayTitle(featured)}</h2>
                     <p>
-                      {featured.summary ||
-                        featuredMetric?.detail?.project_description ||
-                        "A published proof page with visible observations, excerpts, and trust metadata."}
+                      {featured.summary || featured.archetype?.summary || "A published proof page with a visible public work profile behind it."}
                     </p>
                     <div className="explore-feature-badges">
-                      <MetaBadge label="strongest dimension" value={formatDimension(featuredMetric?.strongestDimension)} />
-                      <MetaBadge label="sessions" value={fmtInt(featuredMetric?.sessions)} />
-                      <MetaBadge label="uploads" value={fmtInt(featuredMetric?.uploads)} />
+                      <MetaBadge label="archetype" value={featured.archetype?.label || "Pending"} />
+                      <MetaBadge label="HLS" value={score100(featured.scores.hls)} />
+                      <MetaBadge label="AEL" value={score100(featured.scores.ael)} />
                     </div>
                     <div className="explore-signal-row">
-                      {(featured.signals || []).slice(0, 6).map((signal, index) => (
-                        <span key={`${displaySignal(signal)}-${index}`} className="explore-signal-pill">
-                          {displaySignal(signal)}
+                      {featured.signals.slice(0, 6).map((signal, index) => (
+                        <span key={`${signalName(signal)}-${index}`} className="explore-signal-pill">
+                          {signalName(signal)}
                         </span>
                       ))}
                     </div>
@@ -402,28 +386,18 @@ export default function Explore() {
 
                   <div className="explore-feature-side">
                     <div className="explore-side-card">
-                      <div className="explore-side-title">Trust panel snapshot</div>
-                      <MetricLine label="rich evidence" value={fmtInt(featuredMetric?.evidenceRich)} />
-                      <MetricLine label="mixed evidence" value={fmtInt(featuredMetric?.evidenceMixed)} />
-                      <MetricLine label="light evidence" value={fmtInt(featuredMetric?.evidenceLight)} />
-                      <MetricLine
-                        label="top observed dimension"
-                        value={featuredMetric?.strongestScore != null ? scoreLabel(featuredMetric.strongestScore) : "—"}
-                      />
+                      <div className="explore-side-title">Score profile</div>
+                      <MetricLine label="HLS" value={score100(featured.scores.hls)} />
+                      <MetricLine label="AEL" value={score100(featured.scores.ael)} />
+                      <MetricLine label="CAI" value={rawScore(featured.scores.cai)} />
+                      <MetricLine label="confidence" value={featured.confidence || "n/a"} />
                     </div>
                     <div className="explore-side-card">
-                      <div className="explore-side-title">Signal atlas</div>
-                      <div className="explore-atlas-list">
-                        {atlas.slice(0, 5).map((item) => (
-                          <div key={item.signal} className="explore-atlas-row">
-                            <span>{item.signal}</span>
-                            <div className="explore-atlas-bar">
-                              <div style={{ width: `${Math.max(item.pct, 8)}%` }} />
-                            </div>
-                            <strong>{item.count}</strong>
-                          </div>
-                        ))}
-                      </div>
+                      <div className="explore-side-title">Proof density</div>
+                      <MetricLine label="sessions" value={fmtInt(featured.sample_size.sessions)} />
+                      <MetricLine label="uploads" value={fmtInt(featured.sample_size.uploads)} />
+                      <MetricLine label="rich evidence" value={fmtInt(evidenceSummary(featured.evidence_classes).rich)} />
+                      <MetricLine label="light evidence" value={fmtInt(evidenceSummary(featured.evidence_classes).light)} />
                     </div>
                   </div>
                 </section>
@@ -431,43 +405,102 @@ export default function Explore() {
 
               <section className="explore-boards">
                 <Board
-                  title="Most observed"
-                  subtitle="Sessions surfaced from the public proof payloads"
-                  rows={boards.observed}
-                  value={(item) => fmtInt(item.metric?.sessions)}
+                  title="Overall leaders"
+                  subtitle="Highest public overall scores in the current explore feed"
+                  rows={leaderboardQuery.data?.overall ?? []}
+                  value={(row) => score100(row.overall_score)}
                 />
                 <Board
-                  title="Most evidence-rich"
-                  subtitle="Highest count of A/A+ uploads in visible proofs"
-                  rows={boards.evidence}
-                  value={(item) => fmtInt(item.metric?.evidenceRich)}
+                  title="HLS leaders"
+                  subtitle="Strongest human leadership scores"
+                  rows={leaderboardQuery.data?.hls ?? []}
+                  value={(row) => score100(row.score)}
                 />
                 <Board
-                  title="Most signal-dense"
-                  subtitle="Profiles broadcasting the widest public signal mix"
-                  rows={boards.signalDense}
-                  value={(item) => fmtInt(item.metric?.signalCount)}
+                  title="AEL leaders"
+                  subtitle="Highest AI execution load"
+                  rows={leaderboardQuery.data?.ael ?? []}
+                  value={(row) => score100(row.score)}
+                />
+                <Board
+                  title="CAI leaders"
+                  subtitle="Most amplified capability index"
+                  rows={leaderboardQuery.data?.cai ?? []}
+                  value={(row) => rawScore(row.score)}
                 />
               </section>
 
               <section className="explore-surprise">
                 <div className="explore-section-head">
                   <div>
-                    <div className="explore-section-label">Creative extra</div>
-                    <h3>Signal weather</h3>
+                    <div className="explore-section-label">Field notes</div>
+                    <h3>Archetype census and signal pulse</h3>
                   </div>
                   <p>
-                    A quick read on what kinds of work patterns are surfacing in the public record right now.
+                    A live read on who is publishing, what patterns dominate, and where the strongest public proof bands are clustering right now.
                   </p>
                 </div>
                 <div className="explore-weather-grid">
-                  {atlas.slice(0, 8).map((item, index) => (
-                    <div key={item.signal} className={`explore-weather-card tone-${(index % 4) + 1}`}>
-                      <div className="explore-weather-count">{item.count}</div>
-                      <div className="explore-weather-label">{item.signal}</div>
-                      <div className="explore-weather-pct">{item.pct}% of tagged public proofs</div>
+                  {scoreBands.map((band, index) => (
+                    <div key={band.label} className={`explore-weather-card tone-${(index % 4) + 1}`}>
+                      <div className="explore-weather-count">{band.count}</div>
+                      <div className="explore-weather-label">{band.label}</div>
+                      <div className="explore-weather-pct">{band.note}</div>
                     </div>
                   ))}
+                </div>
+                <div className="explore-feature" style={{ marginTop: 18 }}>
+                  <div className="explore-side-card">
+                    <div className="explore-side-title">Archetype census</div>
+                    <div className="explore-atlas-list">
+                      {archetypeAtlas.slice(0, 8).map((item) => {
+                        const total = Math.max(filtered.length, 1);
+                        const pct = Math.round((item.count / total) * 100);
+                        return (
+                          <div key={item.label} className="explore-atlas-row">
+                            <span>{item.label}</span>
+                            <div className="explore-atlas-bar">
+                              <div style={{ width: `${Math.max(pct, 8)}%` }} />
+                            </div>
+                            <strong>{item.count}</strong>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="explore-feature-side">
+                    <div className="explore-side-card">
+                      <div className="explore-side-title">Signal pulse</div>
+                      <div className="explore-atlas-list">
+                        {topSignals.slice(0, 5).map((signal) => (
+                          <div key={signal.id} className="explore-atlas-row">
+                            <span>{signal.label}</span>
+                            <div className="explore-atlas-bar">
+                              <div style={{ width: `${Math.min(signal.count * 10, 100)}%` }} />
+                            </div>
+                            <strong>{signal.count}</strong>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="explore-side-card">
+                      <div className="explore-side-title">Recently published</div>
+                      <div className="explore-board-list">
+                        {recentPublishes.slice(0, 4).map((entry) => (
+                          <Link key={entry.public_token} to={entry.url} className="explore-board-row">
+                            <span className="explore-rank">{formatDate(entry.published_at)}</span>
+                            <div className="explore-board-copy">
+                              <strong>{displayTitle(entry)}</strong>
+                              <span>{entry.headline || "Public proof page"}</span>
+                            </div>
+                            <span className="explore-board-value">
+                              <ArrowUpRight className="h-4 w-4" />
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </section>
 
@@ -475,47 +508,45 @@ export default function Explore() {
                 <div className="explore-section-head">
                   <div>
                     <div className="explore-section-label">Browse dossiers</div>
-                    <h3>{filtered.length} visible proof page{filtered.length === 1 ? "" : "s"}</h3>
+                    <h3>{filtered.length} public proof page{filtered.length === 1 ? "" : "s"}</h3>
                   </div>
                   <p>
-                    Public proof pages published with public visibility are listed here automatically. Open any card to inspect the underlying proof.
+                    Every card is a published public proof. Open any one to inspect the underlying record, evidence mix, and public-facing work profile.
                   </p>
                 </div>
-                {visibleEntries.length === 0 ? (
-                  <Card className="explore-empty">
-                    No public proof pages match the current search or signal filter.
-                  </Card>
+                {filtered.length === 0 ? (
+                  <Card className="explore-empty">No public proof pages match the current search or signal filter.</Card>
                 ) : (
                   <div className="explore-grid">
-                    {visibleEntries.map((entry) => {
-                      const key = entry.slug ?? entry.public_token;
-                      const metric = metricsByEntry[key];
+                    {filtered.slice(0, 12).map((entry) => {
+                      const evidence = evidenceSummary(entry.evidence_classes);
                       return (
-                        <Link key={key} to={entry.url} className="explore-card-link">
+                        <Link key={entry.public_token} to={entry.url} className="explore-card-link">
                           <Card className="explore-card">
                             <div className="explore-card-head">
                               <div>
-                                <div className="explore-card-label">public proof</div>
-                                <h4>{entry.headline || metric?.detail?.project_title || "Untitled proof page"}</h4>
+                                <div className="explore-card-label">{entry.archetype?.label || "Public proof"}</div>
+                                <h4>{displayTitle(entry)}</h4>
                               </div>
                               <div className="explore-card-score">
-                                {metric?.metricScore != null ? metric.metricScore : "—"}
+                                {entry.overall_score ?? "—"}
                                 <span>/100</span>
                               </div>
                             </div>
                             <p className="explore-card-copy">
-                              {entry.summary ||
-                                metric?.detail?.project_description ||
-                                "A public record of work patterns, evidence classes, and visible observations."}
+                              {entry.summary || entry.archetype?.summary || "Public proof page with visible signals and score structure."}
                             </p>
                             <div className="explore-card-meta">
-                              <span>{formatDimension(metric?.strongestDimension)}</span>
-                              <span>{fmtInt(metric?.sessions)} sessions</span>
-                              <span>{fmtInt(metric?.uploads)} uploads</span>
+                              <span>HLS {score100(entry.scores.hls)}</span>
+                              <span>AEL {score100(entry.scores.ael)}</span>
+                              <span>CAI {rawScore(entry.scores.cai)}</span>
+                              <span>{fmtInt(entry.sample_size.sessions)} sessions</span>
+                              <span>{fmtInt(entry.sample_size.uploads)} uploads</span>
+                              <span>{fmtInt(evidence.rich)} rich evidence</span>
                             </div>
                             <div className="explore-card-signals">
-                              {(entry.signals || []).slice(0, 4).map((signal, index) => (
-                                <span key={`${displaySignal(signal)}-${index}`}>{displaySignal(signal)}</span>
+                              {entry.signals.slice(0, 4).map((signal, index) => (
+                                <span key={`${signalName(signal)}-${index}`}>{signalName(signal)}</span>
                               ))}
                             </div>
                           </Card>
@@ -568,27 +599,27 @@ function Board({
 }: {
   title: string;
   subtitle: string;
-  rows: Array<{ entry: DirectoryEntry; metric?: DetailMetric }>;
-  value: (item: { entry: DirectoryEntry; metric?: DetailMetric }) => string;
+  rows: LeaderboardRow[];
+  value: (row: LeaderboardRow) => string;
 }) {
   return (
     <Card className="explore-board">
       <div className="explore-board-head">
         <div>
-          <div className="explore-board-label">Board</div>
+          <div className="explore-board-label">Leaderboard</div>
           <h3>{title}</h3>
         </div>
+        <div className="explore-board-sub">{subtitle}</div>
       </div>
-      <p className="explore-board-sub">{subtitle}</p>
       <div className="explore-board-list">
-        {rows.map((item, index) => (
-          <Link key={item.entry.slug ?? item.entry.public_token} to={item.entry.url} className="explore-board-row">
-            <span className="explore-rank">{String(index + 1).padStart(2, "0")}</span>
+        {rows.map((row, index) => (
+          <Link key={`${row.public_token}-${title}`} to={row.url} className="explore-board-row">
+            <span className="explore-rank">#{index + 1}</span>
             <div className="explore-board-copy">
-              <strong>{item.entry.headline || item.metric?.detail?.project_title || "Untitled proof page"}</strong>
-              <span>{formatDimension(item.metric?.strongestDimension)}</span>
+              <strong>{displayTitle(row)}</strong>
+              <span>{row.archetype || row.headline || "Public proof"}</span>
             </div>
-            <div className="explore-board-value">{value(item)}</div>
+            <span className="explore-board-value">{value(row)}</span>
           </Link>
         ))}
       </div>
@@ -596,30 +627,30 @@ function Board({
   );
 }
 
-function ExploreGated({ data }: { data: DirectoryGated }) {
-  const pct = Math.min(100, Math.round((data.total_published / Math.max(data.threshold, 1)) * 100));
+function ExploreGated({ data }: { data: ExploreGatedState }) {
+  const progress = data.threshold > 0 ? Math.min(100, Math.round((data.total_published / data.threshold) * 100)) : 0;
+
   return (
     <Card className="explore-gated">
       <div className="explore-gated-eyebrow">
         <Sparkles className="h-4 w-4" />
-        Explore opens soon
+        Explore opens publicly at critical mass
       </div>
-      <h2>The public explore page is still gated.</h2>
+      <h2>The public record is still gathering density.</h2>
       <p>
-        {data.message ||
-          `The public browse experience opens once enough proof pages are published to make the feed worth reading.`}
+        {data.message || "Explore unlocks once enough public proofs have been published to make the feed worth browsing."}
       </p>
       <div className="explore-gated-progress">
         <div className="explore-gated-numbers">
-          <strong>{data.total_published}</strong>
-          <span>of {data.threshold} published proof pages</span>
+          <strong>{fmtInt(data.total_published)}</strong>
+          <span>of {fmtInt(data.threshold)} public proofs needed</span>
         </div>
         <div className="explore-gated-bar">
-          <div style={{ width: `${pct}%` }} />
+          <div style={{ width: `${progress}%` }} />
         </div>
       </div>
       <div className="explore-gated-links">
-        <Link to="/upload">Start your proof</Link>
+        <Link to="/upload">Publish a proof</Link>
         <Link to="/sign-in">Sign in</Link>
       </div>
     </Card>

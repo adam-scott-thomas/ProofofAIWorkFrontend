@@ -150,6 +150,7 @@
   border-radius: 999px;
   font-size: 13px;
   letter-spacing: 0.04em;
+  text-decoration: none;
 }
 
 .explore-chips {
@@ -382,6 +383,7 @@
   gap: 8px;
   color: #2e5b85;
   font-size: 13px;
+  text-decoration: none;
 }
 
 .explore-side-card {
@@ -445,7 +447,7 @@
 }
 
 .explore-boards {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: 22px;
 }
 
@@ -483,6 +485,7 @@
   align-items: center;
   padding: 10px 0;
   border-bottom: 1px solid #efe7d8;
+  text-decoration: none;
 }
 
 .explore-board-row:last-child {
@@ -584,6 +587,7 @@
 
 .explore-card-link {
   min-width: 0;
+  text-decoration: none;
 }
 
 .explore-card {
