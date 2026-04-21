@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, Sparkles, Radar } from "lucide-react";
 import Seo from "./Seo";
 
 type MarketingPageProps = {
@@ -22,46 +22,98 @@ export default function MarketingPage({
   sections,
 }: MarketingPageProps) {
   return (
-    <div className="min-h-screen bg-[#faf8f3] text-[#121212]">
+    <div className="min-h-screen bg-[#07111f] text-white">
       <Seo title={title} description={description} canonical={canonical} />
-      <header className="sticky top-0 z-20 border-b border-[rgba(0,0,0,0.08)] bg-[rgba(250,248,243,0.92)] backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link to="/" className="inline-flex items-center gap-2 text-[14px] text-[#6b6b66] hover:text-[#121212]">
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute left-[-10%] top-[-5%] h-[420px] w-[420px] rounded-full bg-[rgba(72,130,255,0.18)] blur-3xl" />
+        <div className="absolute right-[-8%] top-[10%] h-[360px] w-[360px] rounded-full bg-[rgba(30,215,167,0.14)] blur-3xl" />
+        <div className="absolute bottom-[-10%] left-[20%] h-[320px] w-[320px] rounded-full bg-[rgba(255,190,92,0.12)] blur-3xl" />
+      </div>
+      <header className="sticky top-0 z-20 border-b border-[rgba(255,255,255,0.08)] bg-[rgba(7,17,31,0.72)] backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <Link to="/" className="inline-flex items-center gap-2 text-[14px] text-[rgba(255,255,255,0.64)] hover:text-white">
             <ArrowLeft className="h-4 w-4" />
             Back to home
           </Link>
-          <div className="text-[14px] font-medium tracking-tight">Proof of AI Work</div>
+          <div className="text-[14px] font-medium tracking-tight text-white">Proof of AI Work</div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-14">
-        <div className="max-w-3xl">
-          <div className="text-[11px] uppercase tracking-[0.16em] text-[#6b6b66]">{eyebrow}</div>
-          <h1 className="mt-4 text-5xl leading-[0.98] tracking-tight md:text-6xl">{h1}</h1>
-          <p className="mt-6 text-[18px] leading-[1.7] text-[#3f3f3a]">{intro}</p>
-        </div>
+      <main className="relative mx-auto max-w-6xl px-6 py-14">
+        <section className="grid gap-8 lg:grid-cols-[1.15fr,0.85fr] lg:items-start">
+          <div className="max-w-4xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[rgba(255,255,255,0.68)]">
+              <Sparkles className="h-3.5 w-3.5" />
+              {eyebrow}
+            </div>
+            <h1 className="mt-6 max-w-4xl text-5xl leading-[0.92] tracking-tight text-white md:text-7xl">{h1}</h1>
+            <p className="mt-6 max-w-3xl text-[19px] leading-[1.7] text-[rgba(255,255,255,0.76)]">{intro}</p>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link to="/upload" className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-[14px] font-medium text-[#07111f] shadow-[0_16px_50px_rgba(255,255,255,0.18)]">
+                Start your proof
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link to="/explore" className="inline-flex items-center gap-2 rounded-xl border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] px-5 py-3 text-[14px] text-white">
+                Explore public proof
+              </Link>
+            </div>
+          </div>
+
+          <aside className="rounded-[28px] border border-[rgba(255,255,255,0.1)] bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-6 shadow-[0_24px_90px_rgba(0,0,0,0.32)]">
+            <div className="text-[11px] uppercase tracking-[0.16em] text-[rgba(255,255,255,0.54)]">Why it converts</div>
+            <div className="mt-5 space-y-4">
+              <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.14)] p-4">
+                <div className="flex items-center gap-2 text-[12px] uppercase tracking-[0.12em] text-[rgba(255,255,255,0.54)]">
+                  <BadgeCheck className="h-4 w-4 text-[#73e0bf]" />
+                  Trust signal
+                </div>
+                <div className="mt-2 text-[22px] tracking-tight">Evidence over polish</div>
+                <p className="mt-2 text-[14px] leading-[1.7] text-[rgba(255,255,255,0.7)]">
+                  This page should feel like a product campaign, but it still sells verification, process, and hiring signal.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.14)] p-4">
+                <div className="flex items-center gap-2 text-[12px] uppercase tracking-[0.12em] text-[rgba(255,255,255,0.54)]">
+                  <Radar className="h-4 w-4 text-[#8bb6ff]" />
+                  Outcome
+                </div>
+                <div className="mt-2 text-[22px] tracking-tight">Clear enough to share</div>
+                <p className="mt-2 text-[14px] leading-[1.7] text-[rgba(255,255,255,0.7)]">
+                  The right person should understand the product fast, then click through to upload or explore without friction.
+                </p>
+              </div>
+            </div>
+          </aside>
+        </section>
 
         <section className="mt-12 grid gap-4 md:grid-cols-3">
-          {sections.map((section) => (
-            <div key={section.title} className="rounded-2xl border border-[rgba(0,0,0,0.08)] bg-white p-6 shadow-sm">
-              <h2 className="text-[18px] font-medium tracking-tight text-[#121212]">{section.title}</h2>
-              <p className="mt-3 text-[14px] leading-[1.7] text-[#55554f]">{section.body}</p>
+          {sections.map((section, index) => (
+            <div
+              key={section.title}
+              className="rounded-[24px] border border-[rgba(255,255,255,0.1)] bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.18)]"
+            >
+              <div className="text-[11px] uppercase tracking-[0.16em] text-[rgba(255,255,255,0.45)]">
+                0{index + 1}
+              </div>
+              <h2 className="mt-4 text-[24px] font-medium tracking-tight text-white">{section.title}</h2>
+              <p className="mt-4 text-[14px] leading-[1.8] text-[rgba(255,255,255,0.72)]">{section.body}</p>
             </div>
           ))}
         </section>
 
-        <section className="mt-12 rounded-3xl border border-[rgba(0,0,0,0.08)] bg-[#111114] px-8 py-10 text-white">
-          <div className="text-[11px] uppercase tracking-[0.16em] text-[rgba(255,255,255,0.58)]">Next step</div>
-          <h2 className="mt-3 text-3xl tracking-tight">Turn AI-assisted work into proof.</h2>
-          <p className="mt-4 max-w-2xl text-[15px] leading-[1.7] text-[rgba(255,255,255,0.74)]">
-            Upload conversations, exports, and artifacts to build a verified AI portfolio with evidence, process, and public proof.
+        <section className="mt-12 rounded-[32px] border border-[rgba(255,255,255,0.1)] bg-[linear-gradient(135deg,#eef6ff,#dff3eb_48%,#fff0d3)] px-8 py-10 text-[#07111f] shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
+          <div className="text-[11px] uppercase tracking-[0.16em] text-[rgba(7,17,31,0.56)]">Next step</div>
+          <h2 className="mt-3 max-w-3xl text-4xl tracking-tight">Anyone can claim they’re good with AI. Show the proof.</h2>
+          <p className="mt-4 max-w-2xl text-[15px] leading-[1.8] text-[rgba(7,17,31,0.74)]">
+            Upload conversations, exports, and artifacts to build a verified AI portfolio with evidence, process, and public proof that actually survives a click.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/upload" className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-[14px] font-medium text-[#111114]">
+            <Link to="/upload" className="inline-flex items-center gap-2 rounded-xl bg-[#07111f] px-5 py-3 text-[14px] font-medium text-white shadow-[0_16px_40px_rgba(7,17,31,0.24)]">
               Start your proof
               <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link to="/explore" className="inline-flex items-center gap-2 rounded-lg border border-[rgba(255,255,255,0.16)] px-4 py-2 text-[14px] text-white">
+            <Link to="/explore" className="inline-flex items-center gap-2 rounded-xl border border-[rgba(7,17,31,0.12)] px-5 py-3 text-[14px] text-[#07111f]">
               Explore public proof pages
             </Link>
           </div>
