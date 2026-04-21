@@ -14,8 +14,6 @@ export default function Account() {
   const [formData, setFormData] = useState({
     name: "",
     handle: "",
-    email: "",
-    bio: "",
   });
 
   // Populate form once user data arrives
@@ -24,19 +22,24 @@ export default function Account() {
       setFormData({
         name: user.name ?? user.full_name ?? "",
         handle: user.handle ?? user.username ?? "",
-        email: user.email ?? "",
-        bio: user.bio ?? "",
       });
     }
   }, [user]);
 
+  const handleLocked = Boolean(user?.handle_locked);
+  const handleChangesRemaining = Number(user?.handle_changes_remaining ?? 1);
+  const normalizedHandle = formData.handle.trim().toLowerCase().replace(/^@/, "");
+
   const handleSave = () => {
-    updateProfile.mutate(formData, {
+    updateProfile.mutate({
+      name: formData.name,
+      handle: normalizedHandle,
+    }, {
       onSuccess: () => {
         toast.success("Profile saved successfully");
       },
-      onError: () => {
-        toast.error("Failed to save profile");
+      onError: (error: Error) => {
+        toast.error(error.message || "Failed to save profile");
       },
     });
   };
@@ -61,8 +64,7 @@ export default function Account() {
               <div>
                 <h2 className="text-[15px] text-amber-900">Account surface is intentionally trimmed</h2>
                 <p className="mt-1 text-[13px] text-amber-800">
-                  Integrations, API keys, privacy controls, and destructive account actions are hidden until the backend is ready.
-                  This page only exposes editable profile fields right now.
+                  Screen names are assigned automatically. You get one rename, then the handle locks and becomes your public identity across proof pages.
                 </p>
               </div>
             </div>
@@ -79,7 +81,7 @@ export default function Account() {
                 <div className="text-[13px] text-[#717182]">Loading profile...</div>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-4 md:grid-cols-2">
                     <div>
                       <Label htmlFor="name">Full Name</Label>
                       <Input
@@ -90,36 +92,31 @@ export default function Account() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="handle">Handle</Label>
+                      <div className="flex items-center justify-between gap-3">
+                        <Label htmlFor="handle">Screen name</Label>
+                        <span className="text-[11px] uppercase tracking-[0.08em] text-[#717182]">
+                          {handleLocked ? "Locked" : `${handleChangesRemaining} change left`}
+                        </span>
+                      </div>
                       <Input
                         id="handle"
                         value={formData.handle}
                         onChange={(e) => setFormData({ ...formData, handle: e.target.value })}
+                        disabled={handleLocked}
                         className="mt-1.5"
                       />
+                      <p className="mt-1.5 text-[12px] leading-relaxed text-[#717182]">
+                        We assign a random screen name like <span className="text-[#161616]">signal-builder</span>. You can change it once. After that it is permanent.
+                      </p>
                     </div>
                   </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="mt-1.5"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="bio">Bio</Label>
-                    <Input
-                      id="bio"
-                      value={formData.bio}
-                      onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                      className="mt-1.5"
-                    />
+                  <div className="rounded-lg border border-[rgba(0,0,0,0.08)] bg-[#F7F4ED] p-4">
+                    <div className="text-[11px] uppercase tracking-[0.08em] text-[#717182]">Account email</div>
+                    <div className="mt-1 text-[14px] text-[#161616]">{user?.email ?? "—"}</div>
+                    <div className="mt-1 text-[12px] text-[#717182]">Email is controlled by magic-link sign-in and is not edited here.</div>
                   </div>
                   <div className="flex justify-end">
-                    <Button onClick={handleSave} disabled={updateProfile.isPending}>
+                    <Button onClick={handleSave} disabled={updateProfile.isPending || !normalizedHandle}>
                       {updateProfile.isPending ? "Saving..." : "Save Changes"}
                     </Button>
                   </div>

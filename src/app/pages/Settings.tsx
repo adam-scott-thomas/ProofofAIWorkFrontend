@@ -24,7 +24,7 @@ const ENTRIES: Entry[] = [
   {
     href: "/app/settings/account",
     title: "Account",
-    description: "Name, handle, email, bio. Public fields end up on proof pages.",
+    description: "Name and screen name. We assign one automatically and allow one change total.",
     icon: UserIcon,
   },
   {
