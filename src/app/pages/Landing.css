@@ -97,6 +97,13 @@
   gap: 10px;
 }
 
+.po-mobile-nav-toggle,
+.po-mobile-nav,
+.po-mobile-nav-backdrop,
+.po-mobile-nav-close {
+  display: none;
+}
+
 .po-nav-links {
   gap: 28px;
   font-size: 13px;
@@ -1096,6 +1103,23 @@
     display: none;
   }
 
+  .po-nav-actions {
+    gap: 8px;
+  }
+
+  .po-mobile-nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--po-border);
+    background: transparent;
+    color: var(--po-ink);
+    cursor: pointer;
+  }
+
   .po-nav-inner {
     min-height: 56px;
   }
@@ -1165,5 +1189,97 @@
 
   .po-footer-bar {
     flex-direction: column;
+  }
+
+  .po-mobile-nav {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+  }
+
+  .po-mobile-nav-backdrop {
+    position: absolute;
+    inset: 0;
+    display: block;
+    border: 0;
+    background: rgba(3, 2, 19, 0.56);
+  }
+
+  .po-mobile-nav-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: min(88vw, 22rem);
+    height: 100%;
+    padding: 18px;
+    background: var(--po-surface);
+    border-right: 1px solid var(--po-border);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18);
+  }
+
+  .po-mobile-nav-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .po-mobile-nav-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--po-border);
+    background: transparent;
+    color: var(--po-ink);
+    cursor: pointer;
+  }
+
+  .po-mobile-nav-links {
+    display: grid;
+    gap: 8px;
+  }
+
+  .po-mobile-nav-links a {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--po-border-soft);
+    font-size: 15px;
+    color: var(--po-ink);
+  }
+
+  .po-mobile-nav-cta {
+    width: 100%;
+    margin-top: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .po-wrap,
+  .po-wrap-wide {
+    width: min(100%, calc(100% - 24px));
+  }
+
+  .po-theme-toggle {
+    width: 36px;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .po-form-meta {
+    gap: 6px;
+  }
+
+  .po-hero-stats strong {
+    font-size: 34px;
+  }
+
+  .po-proof-footer,
+  .po-footer-top a,
+  .po-footer-top span {
+    font-size: 12px;
   }
 }

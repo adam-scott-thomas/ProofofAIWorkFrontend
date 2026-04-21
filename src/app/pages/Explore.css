@@ -751,15 +751,49 @@
     width: min(100vw - 28px, 1240px);
   }
 
+  .explore-hero {
+    padding: 20px 0 34px;
+  }
+
+  .explore-nav {
+    align-items: flex-start;
+    gap: 14px;
+  }
+
   .explore-nav,
-  .explore-nav-links,
   .explore-search-row {
     flex-direction: column;
     align-items: stretch;
   }
 
+  .explore-nav-links {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+  }
+
+  .explore-nav-link {
+    font-size: 11px;
+  }
+
+  .explore-hero-grid {
+    gap: 24px;
+    margin-top: 28px;
+  }
+
   .explore-title {
-    font-size: 48px;
+    font-size: clamp(38px, 13vw, 54px);
+    line-height: 0.98;
+  }
+
+  .explore-subtitle {
+    margin-top: 16px;
+    font-size: 15px;
+  }
+
+  .explore-primary-link {
+    width: 100%;
+    justify-content: center;
   }
 
   .explore-feature-main,
@@ -773,5 +807,94 @@
 
   .explore-feature-score-value {
     font-size: 64px;
+  }
+
+  .explore-feature-meta,
+  .explore-card-head,
+  .explore-gated-links {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .explore-board-row {
+    grid-template-columns: auto 1fr;
+    align-items: start;
+  }
+
+  .explore-board-value {
+    grid-column: 2;
+  }
+
+  .explore-card-score {
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 560px) {
+  .explore-shell {
+    width: min(100vw - 20px, 1240px);
+  }
+
+  .explore-main {
+    padding: 26px 0 54px;
+  }
+
+  .explore-chip {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .explore-feature-main h2,
+  .explore-board-head h3,
+  .explore-section-head h3,
+  .explore-gated h2 {
+    font-size: 24px;
+  }
+
+  .explore-feature-main p,
+  .explore-board-sub,
+  .explore-section-head p,
+  .explore-gated p,
+  .explore-card-copy {
+    font-size: 14px;
+  }
+
+  .explore-feature-score-value {
+    font-size: 52px;
+  }
+
+  .explore-feature-score-value span,
+  .explore-weather-pct,
+  .explore-card-meta,
+  .explore-side-title,
+  .explore-board-label,
+  .explore-section-label,
+  .explore-card-label {
+    font-size: 10px;
+  }
+
+  .explore-weather-count {
+    font-size: 44px;
+  }
+
+  .explore-weather-label {
+    font-size: 14px;
+  }
+
+  .explore-card-meta {
+    gap: 8px 10px;
+  }
+
+  .explore-atlas-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .explore-atlas-row strong {
+    justify-self: start;
+  }
+
+  .explore-gated-links a {
+    width: 100%;
   }
 }

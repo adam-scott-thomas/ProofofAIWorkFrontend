@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowRight, Check, MoonStar, SunMedium } from "lucide-react";
+import { ArrowRight, Check, Menu, MoonStar, SunMedium, X } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import Seo from "../components/Seo";
 import "./Landing.css";
@@ -166,6 +166,7 @@ export default function Landing() {
   const [heroSent, setHeroSent] = useState(false);
   const [closerEmail, setCloserEmail] = useState("");
   const [closerSent, setCloserSent] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const requestMagicLink = useRequestMagicLink();
 
   useEffect(() => {
@@ -206,6 +207,14 @@ export default function Landing() {
           <div className="po-nav-actions">
             <button
               type="button"
+              className="po-mobile-nav-toggle"
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Open navigation"
+            >
+              <Menu size={18} />
+            </button>
+            <button
+              type="button"
               className="po-theme-toggle"
               onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
             >
@@ -222,6 +231,57 @@ export default function Landing() {
           </div>
         </div>
       </header>
+
+      {mobileNavOpen ? (
+        <div className="po-mobile-nav">
+          <button
+            type="button"
+            className="po-mobile-nav-backdrop"
+            onClick={() => setMobileNavOpen(false)}
+            aria-label="Close navigation"
+          />
+          <div className="po-mobile-nav-panel">
+            <div className="po-mobile-nav-head">
+              <div>
+                <div className="po-brand">
+                  Proof of AI Work
+                  <span className="po-brand-dot" />
+                </div>
+                <div className="po-eyebrow">Navigate</div>
+              </div>
+              <button
+                type="button"
+                className="po-mobile-nav-close"
+                onClick={() => setMobileNavOpen(false)}
+                aria-label="Close navigation"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="po-mobile-nav-links">
+              <a href="#how" onClick={() => setMobileNavOpen(false)}>From chats to proof</a>
+              <Link to="/students" onClick={() => setMobileNavOpen(false)}>For students</Link>
+              <Link to="/employers" onClick={() => setMobileNavOpen(false)}>For employers</Link>
+              <Link to="/how-it-works" onClick={() => setMobileNavOpen(false)}>How it works</Link>
+              <Link to="/quiz" onClick={() => setMobileNavOpen(false)}>Quiz</Link>
+              <Link to="/blog" onClick={() => setMobileNavOpen(false)}>Blog</Link>
+              <Link to="/explore" onClick={() => setMobileNavOpen(false)}>Explore</Link>
+              <Link to="/sign-in" onClick={() => setMobileNavOpen(false)}>Sign in</Link>
+            </div>
+            <button
+              type="button"
+              className="po-btn po-btn-primary po-mobile-nav-cta"
+              onClick={() => {
+                setMobileNavOpen(false);
+                navigate("/upload");
+              }}
+            >
+              Start your proof
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <main>
         <section className="po-hero">
