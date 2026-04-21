@@ -18,6 +18,7 @@ interface PaymentModalProps {
 type PaymentTab = "card" | "crypto";
 
 export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalProps) {
+  const paymentsLive = false;
   const { data: paymentConfig } = usePaymentConfig();
   const setUnlocked = useUnlockStore((s) => s.setUnlocked);
 
@@ -188,6 +189,12 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
         </DialogHeader>
 
         <div className="space-y-6">
+          {!paymentsLive && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
+              Paid AI Sort is under construction. Free grouping is live elsewhere in the app.
+            </div>
+          )}
+
           {/* Preview of what they're buying */}
           <div className="rounded-md border-2 border-[var(--score-execution)] bg-[#FAFAFA] p-6">
             <div className="mb-4 text-[11px] uppercase tracking-wider text-[#717182]">
@@ -266,11 +273,11 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
           {/* Free unlock with coupon */}
           {isFreeWithCoupon ? (
             <div className="space-y-3">
-              <Button className="w-full" size="lg" onClick={handleFreeUnlock} disabled={unlocking}>
+              <Button className="w-full" size="lg" onClick={handleFreeUnlock} disabled={unlocking || !paymentsLive}>
                 {unlocking ? (
                   <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Running AI Sort...</>
                 ) : (
-                  <><Sparkles className="mr-2 h-5 w-5" /> Unlock — Free</>
+                  <><Sparkles className="mr-2 h-5 w-5" /> {paymentsLive ? "Unlock — Free" : "Under construction"}</>
                 )}
               </Button>
               <p className="text-center text-[12px] text-[#717182]">
@@ -283,7 +290,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
             {/* Payment method tabs */}
             <div className="flex gap-2">
               <button
-                onClick={() => { setTab("card"); setError(null); }}
+                onClick={() => { if (!paymentsLive) return; setTab("card"); setError(null); }}
                 className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] transition-colors ${
                   tab === "card"
                     ? "bg-[#030213] text-white"
@@ -294,7 +301,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
                 Card — $5
               </button>
               <button
-                onClick={() => { setTab("crypto"); setError(null); }}
+                onClick={() => { if (!paymentsLive) return; setTab("crypto"); setError(null); }}
                 className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] transition-colors ${
                   tab === "crypto"
                     ? "bg-[#030213] text-white"
@@ -328,8 +335,8 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
                     locationId={paymentConfig.location_id}
                     onToken={handleCardToken}
                     onCancel={() => onOpenChange(false)}
-                    submitLabel="Pay $5"
-                    loading={cardLoading}
+                    submitLabel={paymentsLive ? "Pay $5" : "Under construction"}
+                    loading={cardLoading || !paymentsLive}
                   />
                 ) : (
                   <div className="flex items-center gap-2 text-[13px] text-[#717182]">
@@ -353,18 +360,18 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
                         variant="outline"
                         className="flex-1"
                         onClick={() => onOpenChange(false)}
-                        disabled={cryptoLoading}
+                        disabled={cryptoLoading || !paymentsLive}
                       >
                         Cancel
                       </Button>
                       <Button
                         className="flex-1"
                         onClick={handleCryptoPay}
-                        disabled={cryptoLoading}
+                        disabled={cryptoLoading || !paymentsLive}
                       >
                         {cryptoLoading && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
                         <Bitcoin className="mr-2 h-3.5 w-3.5" />
-                        Pay with Crypto — $4.20
+                        {paymentsLive ? "Pay with Crypto — $4.20" : "Under construction"}
                       </Button>
                     </div>
                   </>
