@@ -13,7 +13,7 @@ import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { useWorkProfile } from "../../hooks/useApi";
 import { dateTime } from "../lib/poaw";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 const HLS_DIMENSIONS: Array<{ key: keyof HLSDimensions; label: string; help: string }> = [
   { key: "goal_origination", label: "Goal origination", help: "Who set the direction?" },
@@ -52,7 +52,11 @@ type CAIDimensions = {
 };
 
 export default function WorkProfile() {
-  const { data, isLoading, error } = useWorkProfile();
+  const [searchParams] = useSearchParams();
+  const projectId = searchParams.get("project_id") ?? undefined;
+  const { data, isLoading, error } = useWorkProfile(projectId);
+  const errorMessage = error instanceof Error ? error.message : "";
+  const noProfileYet = !data && /no completed profile found/i.test(errorMessage);
 
   if (isLoading) {
     return (
@@ -63,30 +67,53 @@ export default function WorkProfile() {
     );
   }
 
-  // 404 or other failure → treat as "no profile yet"
-  if (error || !data) {
+  if (!data) {
     return (
       <div className="min-h-screen bg-[#F7F4ED] text-[#161616]">
         <header className="border-b border-[#D8D2C4] bg-[#FBF8F1]">
           <div className="px-8 py-7">
             <div className="text-[12px] uppercase tracking-[0.16em] text-[#6B6B66]">Work profile</div>
-            <h1 className="mt-2 text-3xl tracking-tight">Your aggregate AI work profile.</h1>
+            <h1 className="mt-2 text-3xl tracking-tight">
+              {projectId ? "This project's work profile." : "Your aggregate AI work profile."}
+            </h1>
           </div>
         </header>
         <div className="px-8 py-10">
-          <Card className="mx-auto max-w-2xl border border-dashed border-[#D8D2C4] bg-[#FBF8F1] p-10 text-center text-[14px] text-[#5C5C5C]">
-            <Activity className="mx-auto mb-3 h-6 w-6 text-[#6B6B66]" />
-            <div className="text-[#161616]">No work profile yet.</div>
+          <Card className={`mx-auto max-w-2xl p-10 text-center text-[14px] ${
+            noProfileYet
+              ? "border border-dashed border-[#D8D2C4] bg-[#FBF8F1] text-[#5C5C5C]"
+              : "border border-[#E8B8B8] bg-[#FBEAEA] text-[#8B2F2F]"
+          }`}>
+            {noProfileYet ? (
+              <Activity className="mx-auto mb-3 h-6 w-6 text-[#6B6B66]" />
+            ) : (
+              <AlertTriangle className="mx-auto mb-3 h-6 w-6" />
+            )}
+            <div className="text-[#161616]">
+              {noProfileYet ? "No work profile yet." : "Work profile failed to load."}
+            </div>
             <div className="mt-1">
-              Evaluate a confirmed project first — the aggregate profile builds from assessment results.
+              {noProfileYet
+                ? projectId
+                  ? "Save the project brief, finish an assessment, then build the project-scoped profile."
+                  : "Evaluate a confirmed project first — then build the work profile from that project."
+                : errorMessage || "The backend did not return a usable work profile response."}
             </div>
             <div className="mt-4 flex justify-center gap-2">
-              <Link to="/app/projects">
-                <Button variant="outline">Go to projects</Button>
-              </Link>
-              <Link to="/app/upload/new">
-                <Button>Upload conversations</Button>
-              </Link>
+              {projectId ? (
+                <Link to={`/app/projects/${projectId}`}>
+                  <Button variant="outline">Back to project</Button>
+                </Link>
+              ) : (
+                <Link to="/app/projects">
+                  <Button variant="outline">Go to projects</Button>
+                </Link>
+              )}
+              {!projectId ? (
+                <Link to="/app/upload/new">
+                  <Button>Upload conversations</Button>
+                </Link>
+              ) : null}
             </div>
           </Card>
         </div>

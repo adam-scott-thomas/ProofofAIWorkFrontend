@@ -33,7 +33,7 @@ import {
   useDeleteProject,
   useProjects,
 } from "../../hooks/useApi";
-import { apiPatch } from "../../lib/api";
+import { apiPost } from "../../lib/api";
 import { asArray, isoDate } from "../lib/poaw";
 
 type Project = {
@@ -81,7 +81,10 @@ export default function Projects() {
 
   const confirmProject = useMutation({
     mutationFn: (project: Project) =>
-      apiPatch(`/projects/${project.id}`, { title: project.title, status: "confirmed" }),
+      apiPost(`/projects/${project.id}/confirm`, {
+        title: project.title,
+        description: project.description,
+      }),
     onSuccess: () => {
       toast.success("Project confirmed");
       queryClient.invalidateQueries({ queryKey: ["projects"] });

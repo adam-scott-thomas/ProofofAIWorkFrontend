@@ -132,11 +132,23 @@ export const useIntake = (projectId: string) =>
 export const useCreateIntake = () =>
   useMutation({ mutationFn: (body: any) => apiPost<any>("/intake", body) });
 
+export const useUpdateIntake = () =>
+  useMutation({
+    mutationFn: ({ briefId, body }: { briefId: string; body: any }) =>
+      apiPatch<any>(`/intake/${briefId}`, body),
+  });
+
 // Evaluate
 export const useTriggerEvaluation = () =>
   useMutation({
     mutationFn: (projectId: string) =>
       apiPost<any>(`/projects/${projectId}/evaluate`, {}),
+  });
+
+export const useEvaluateWorkProfile = () =>
+  useMutation({
+    mutationFn: (projectId: string) =>
+      apiPost<any>(`/work-profile/evaluate?project_id=${projectId}`, {}),
   });
 
 // Billing

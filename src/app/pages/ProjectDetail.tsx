@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -34,9 +34,14 @@ import {
 } from "../components/ui/dialog";
 import {
   useAssessments,
+  useCreateIntake,
   useDeleteProject,
+  useEvaluateWorkProfile,
+  useIntake,
   useProject,
   useTriggerEvaluation,
+  useUpdateIntake,
+  useWorkProfile,
 } from "../../hooks/useApi";
 import { apiFetch, apiPatch, apiPost } from "../../lib/api";
 import { asArray, dateTime } from "../lib/poaw";
@@ -62,6 +67,17 @@ type Project = {
   updated_at: string;
 };
 
+type ProjectBrief = {
+  id: string;
+  project_id: string;
+  goal_statement: string;
+  solo_time_estimate_hours: number;
+  starting_point: "from_scratch" | "iterating";
+  role_declaration?: string | null;
+  team_context?: string | null;
+  outcome_statement?: string | null;
+};
+
 const CLASS_STYLE: Record<string, string> = {
   A: "bg-[#1F6A3F] text-white",
   B: "bg-[#486E9B] text-white",
@@ -81,13 +97,24 @@ export default function ProjectDetail() {
   const queryClient = useQueryClient();
   const { data: project, isLoading } = useProject(id ?? "") as { data?: Project; isLoading: boolean };
   const { data: assessmentsData } = useAssessments();
+  const briefQuery = useIntake(id ?? "") as { data?: ProjectBrief; isLoading: boolean; error?: Error | null };
+  const workProfileQuery = useWorkProfile(id ?? "") as { data?: any; isLoading: boolean; error?: Error | null };
   const triggerEvaluation = useTriggerEvaluation();
+  const triggerWorkProfile = useEvaluateWorkProfile();
+  const createIntake = useCreateIntake();
+  const updateIntake = useUpdateIntake();
   const deleteProject = useDeleteProject();
 
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
   const [scuttleOpen, setScuttleOpen] = useState(false);
+  const [goalStatement, setGoalStatement] = useState("");
+  const [soloTimeEstimateHours, setSoloTimeEstimateHours] = useState("8");
+  const [startingPoint, setStartingPoint] = useState<"from_scratch" | "iterating">("from_scratch");
+  const [roleDeclaration, setRoleDeclaration] = useState("");
+  const [teamContext, setTeamContext] = useState("");
+  const [outcomeStatement, setOutcomeStatement] = useState("");
 
   const scuttle = useMutation({
     mutationFn: () => apiPost(`/projects/${id}/scuttle`, {}),
@@ -135,6 +162,17 @@ export default function ProjectDetail() {
       .sort((a, b) => new Date(b.updated_at ?? b.created_at).getTime() - new Date(a.updated_at ?? a.created_at).getTime());
   }, [assessmentsData, id]);
 
+  useEffect(() => {
+    const brief = briefQuery.data;
+    if (!brief) return;
+    setGoalStatement(brief.goal_statement ?? "");
+    setSoloTimeEstimateHours(String(brief.solo_time_estimate_hours ?? "8"));
+    setStartingPoint(brief.starting_point ?? "from_scratch");
+    setRoleDeclaration(brief.role_declaration ?? "");
+    setTeamContext(brief.team_context ?? "");
+    setOutcomeStatement(brief.outcome_statement ?? "");
+  }, [briefQuery.data]);
+
   if (isLoading || !project) {
     return (
       <div className="flex min-h-screen items-center justify-center text-[13px] text-[#6B6B66]">
@@ -148,6 +186,17 @@ export default function ProjectDetail() {
   const isConfirmed = project.status === "confirmed";
   const isSuggested = project.status === "suggested";
   const clusterPct = project.cluster_confidence != null ? Math.round(project.cluster_confidence * 100) : null;
+  const hasFinishedAssessment = projectAssessments.some(
+    (assessment) => assessment.status === "complete" || assessment.status === "partial",
+  );
+  const hasBrief = !!briefQuery.data;
+  const workProfileErrorMessage = workProfileQuery.error?.message ?? "";
+  const workProfileMissing = !workProfileQuery.data && /no completed profile found/i.test(workProfileErrorMessage);
+  const workProfileReady = !!workProfileQuery.data;
+  const canBuildWorkProfile = isConfirmed && hasBrief && hasFinishedAssessment;
+  const briefSavePending = createIntake.isPending || updateIntake.isPending;
+  const validGoalStatement = goalStatement.trim().length >= 10;
+  const validSoloTime = Number(soloTimeEstimateHours) > 0;
 
   return (
     <div className="min-h-screen bg-[#F7F4ED] text-[#161616]">
@@ -309,6 +358,182 @@ export default function ProjectDetail() {
             </section>
           ) : null}
 
+          <section>
+            <div className="mb-3 flex items-baseline justify-between">
+              <div>
+                <div className="text-[12px] uppercase tracking-[0.16em] text-[#6B6B66]">Project brief</div>
+                <h2 className="text-xl tracking-tight">Give the evaluator real context</h2>
+              </div>
+              <div className="text-[11px] text-[#6B6B66]">
+                Required before building the work profile
+              </div>
+            </div>
+
+            <Card className="border border-[#D8D2C4] bg-white p-5">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <label className="text-[12px] uppercase tracking-[0.1em] text-[#6B6B66]">
+                    Goal statement
+                  </label>
+                  <Textarea
+                    value={goalStatement}
+                    onChange={(event) => setGoalStatement(event.target.value)}
+                    rows={4}
+                    className="mt-1"
+                    placeholder="What were you trying to ship, solve, or prove?"
+                  />
+                </div>
+                <div>
+                  <label className="text-[12px] uppercase tracking-[0.1em] text-[#6B6B66]">
+                    Solo time estimate (hours)
+                  </label>
+                  <Input
+                    type="number"
+                    min="0.1"
+                    step="0.5"
+                    value={soloTimeEstimateHours}
+                    onChange={(event) => setSoloTimeEstimateHours(event.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-[12px] uppercase tracking-[0.1em] text-[#6B6B66]">
+                    Starting point
+                  </label>
+                  <select
+                    value={startingPoint}
+                    onChange={(event) => setStartingPoint(event.target.value as "from_scratch" | "iterating")}
+                    className="mt-1 flex h-10 w-full rounded-md border border-[#D8D2C4] bg-white px-3 text-sm text-[#161616]"
+                  >
+                    <option value="from_scratch">From scratch</option>
+                    <option value="iterating">Iterating on existing work</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[12px] uppercase tracking-[0.1em] text-[#6B6B66]">
+                    Your role
+                  </label>
+                  <Input
+                    value={roleDeclaration}
+                    onChange={(event) => setRoleDeclaration(event.target.value)}
+                    className="mt-1"
+                    placeholder="Founder, engineer, designer, operator..."
+                  />
+                </div>
+                <div>
+                  <label className="text-[12px] uppercase tracking-[0.1em] text-[#6B6B66]">
+                    Team context
+                  </label>
+                  <Input
+                    value={teamContext}
+                    onChange={(event) => setTeamContext(event.target.value)}
+                    className="mt-1"
+                    placeholder="Solo, pair, team of 4..."
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-[12px] uppercase tracking-[0.1em] text-[#6B6B66]">
+                    Outcome statement
+                  </label>
+                  <Textarea
+                    value={outcomeStatement}
+                    onChange={(event) => setOutcomeStatement(event.target.value)}
+                    rows={3}
+                    className="mt-1"
+                    placeholder="What happened when this work landed?"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <Button
+                  disabled={briefSavePending || !validGoalStatement || !validSoloTime}
+                  onClick={() => {
+                    const body = {
+                      project_id: project.id,
+                      goal_statement: goalStatement.trim(),
+                      solo_time_estimate_hours: Number(soloTimeEstimateHours),
+                      starting_point: startingPoint,
+                      role_declaration: roleDeclaration.trim() || undefined,
+                      team_context: teamContext.trim() || undefined,
+                      outcome_statement: outcomeStatement.trim() || undefined,
+                    };
+                    const onSuccess = () => {
+                      toast.success(hasBrief ? "Brief updated" : "Brief saved");
+                      queryClient.invalidateQueries({ queryKey: ["intake", project.id] });
+                    };
+                    const onError = (error: any) => toast.error(error?.message ?? "Brief save failed");
+
+                    if (briefQuery.data?.id) {
+                      updateIntake.mutate({ briefId: briefQuery.data.id, body }, { onSuccess, onError });
+                    } else {
+                      createIntake.mutate(body, { onSuccess, onError });
+                    }
+                  }}
+                >
+                  {briefSavePending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {hasBrief ? "Update brief" : "Save brief"}
+                </Button>
+                <div className="text-[12px] text-[#6B6B66]">
+                  {hasBrief ? "Brief is on file." : "No brief saved yet."}
+                </div>
+              </div>
+            </Card>
+          </section>
+
+          <section>
+            <div className="mb-3 flex items-baseline justify-between">
+              <div>
+                <div className="text-[12px] uppercase tracking-[0.16em] text-[#6B6B66]">Work profile</div>
+                <h2 className="text-xl tracking-tight">Turn the finished assessment into a profile</h2>
+              </div>
+            </div>
+
+            <Card className="border border-[#D8D2C4] bg-white p-5">
+              <div className="grid gap-3 md:grid-cols-3">
+                <RequirementChip label="Confirmed project" met={isConfirmed} />
+                <RequirementChip label="Saved brief" met={hasBrief} />
+                <RequirementChip label="Finished assessment" met={hasFinishedAssessment} />
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {workProfileReady ? (
+                  <Link to={`/app/work-profile?project_id=${project.id}`}>
+                    <Button>
+                      Open work profile
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button
+                    disabled={!canBuildWorkProfile || triggerWorkProfile.isPending}
+                    onClick={() =>
+                      triggerWorkProfile.mutate(project.id, {
+                        onSuccess: () => {
+                          toast.success("Work profile started");
+                          navigate(`/app/work-profile?project_id=${project.id}`);
+                        },
+                        onError: (error: any) => toast.error(error?.message ?? "Work profile failed to start"),
+                      })
+                    }
+                  >
+                    {triggerWorkProfile.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Build work profile
+                  </Button>
+                )}
+                <div className="text-[12px] text-[#6B6B66]">
+                  {workProfileReady
+                    ? "A project-scoped work profile already exists."
+                    : workProfileMissing
+                      ? "No project-scoped work profile yet."
+                      : workProfileErrorMessage
+                        ? workProfileErrorMessage
+                        : "Complete the three requirements, then build it."}
+                </div>
+              </div>
+            </Card>
+          </section>
+
           {/* Repos */}
           <ReposSection projectId={project.id} />
 
@@ -452,6 +677,21 @@ export default function ProjectDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function RequirementChip({ label, met }: { label: string; met: boolean }) {
+  return (
+    <div className={`rounded-md border px-3 py-2 text-[12px] ${
+      met
+        ? "border-[#BFD8C5] bg-[#EFF8F1] text-[#1F6A3F]"
+        : "border-[#D8D2C4] bg-[#FBF8F1] text-[#6B6B66]"
+    }`}>
+      <div className="flex items-center gap-2">
+        {met ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Hash className="h-3.5 w-3.5" />}
+        {label}
+      </div>
     </div>
   );
 }
