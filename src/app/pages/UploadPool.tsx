@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   ArrowRight,
@@ -23,7 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
-import { useAiCluster, useAiClusterEstimate, usePool } from "../../hooks/useApi";
+import { useAiCluster, useAiClusterEstimate, useClusterStatus, usePool } from "../../hooks/useApi";
 import { apiDelete, apiPost } from "../../lib/api";
 import { dateTime } from "../lib/poaw";
 
@@ -66,6 +66,9 @@ export default function UploadPool() {
   const [query, setQuery] = useState("");
   const [clusterOpen, setClusterOpen] = useState(false);
   const [cleanupOpen, setCleanupOpen] = useState(false);
+  const [clusterJobId, setClusterJobId] = useState<string | null>(null);
+  const [clusterFinalized, setClusterFinalized] = useState(false);
+  const clusterStatus = useClusterStatus(clusterJobId, !clusterFinalized);
 
   const removeUpload = useMutation({
     mutationFn: (uploadId: string) => apiDelete(`/pool/${uploadId}`),
@@ -117,6 +120,35 @@ export default function UploadPool() {
     for (const conversation of conversations) counts[conversation.evidence_class] = (counts[conversation.evidence_class] ?? 0) + 1;
     return counts;
   }, [conversations]);
+
+  useEffect(() => {
+    const status = clusterStatus.data?.status;
+    if (!clusterJobId || clusterFinalized || !status) return;
+
+    if (status === "complete") {
+      const count = clusterStatus.data.result?.projects?.length ?? 0;
+      setClusterFinalized(true);
+      toast.success(`Created ${count} project${count === 1 ? "" : "s"}`);
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["pool"] });
+    }
+
+    if (status === "failed") {
+      setClusterFinalized(true);
+      toast.error(clusterStatus.data.error_message || "Grouping failed");
+    }
+  }, [clusterFinalized, clusterJobId, clusterStatus.data, queryClient]);
+
+  const resetClusterJob = () => {
+    setClusterJobId(null);
+    setClusterFinalized(false);
+  };
+
+  const clusterJobActive =
+    !!clusterJobId &&
+    !clusterFinalized &&
+    clusterStatus.data?.status !== "complete" &&
+    clusterStatus.data?.status !== "failed";
 
   if (isLoading) {
     return (
@@ -254,7 +286,13 @@ export default function UploadPool() {
         </div>
       </div>
 
-      <Dialog open={clusterOpen} onOpenChange={setClusterOpen}>
+      <Dialog
+        open={clusterOpen}
+        onOpenChange={(open) => {
+          setClusterOpen(open);
+          if (!open && !clusterJobActive) resetClusterJob();
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Cluster unassigned conversations</DialogTitle>
@@ -271,28 +309,63 @@ export default function UploadPool() {
               </div>
             </div>
           ) : null}
+          {clusterJobId ? (
+            <div className={`rounded-md border p-3 text-[13px] ${
+              clusterStatus.data?.status === "failed"
+                ? "border-[#E8B8B8] bg-[#FBEAEA] text-[#8B2F2F]"
+                : clusterStatus.data?.status === "complete"
+                  ? "border-[#BFD8C5] bg-[#EFF8F1] text-[#1F6A3F]"
+                  : "border-[#D8D2C4] bg-[#FBF8F1] text-[#5C5C5C]"
+            }`}>
+              <div className="flex items-center gap-2">
+                {clusterJobActive ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                <span className="font-medium">
+                  {clusterStatus.data?.status === "complete"
+                    ? "Grouping complete"
+                    : clusterStatus.data?.status === "failed"
+                      ? "Grouping failed"
+                      : clusterStatus.data?.status === "running"
+                        ? "Grouping conversations"
+                        : "Grouping queued"}
+                </span>
+              </div>
+              {clusterStatus.data?.status === "complete" ? (
+                <div className="mt-1 text-[12px]">
+                  {clusterStatus.data.result?.projects?.length ?? 0} project{(clusterStatus.data.result?.projects?.length ?? 0) === 1 ? "" : "s"} created,
+                  {" "}{clusterStatus.data.result?.unclustered_count ?? 0} left unclustered.
+                </div>
+              ) : null}
+              {clusterStatus.data?.status === "failed" ? (
+                <div className="mt-1 text-[12px]">
+                  {clusterStatus.data.error_message || "The clustering job failed."}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setClusterOpen(false)}>Cancel</Button>
+            <Button variant="ghost" onClick={() => setClusterOpen(false)} disabled={clusterJobActive}>
+              {clusterStatus.data?.status === "complete" || clusterStatus.data?.status === "failed" ? "Close" : "Cancel"}
+            </Button>
             <Button
-              disabled={aiCluster.isPending}
+              disabled={aiCluster.isPending || clusterJobActive}
               onClick={() =>
                 aiCluster.mutate({ tier: "free" }, {
                   onSuccess: (result: any) => {
-                    setClusterOpen(false);
-                    const count = result?.projects?.length ?? 0;
-                    toast.success(`Created ${count} project${count === 1 ? "" : "s"}`);
-                    queryClient.invalidateQueries({ queryKey: ["projects"] });
-                    queryClient.invalidateQueries({ queryKey: ["pool"] });
+                    if (!result?.job_id) {
+                      toast.error("Grouping did not return a job id");
+                      return;
+                    }
+                    setClusterFinalized(false);
+                    setClusterJobId(result.job_id);
                   },
                   onError: (error: any) => {
-                    setClusterOpen(false);
                     toast.error(error?.message ?? "Grouping failed");
                   },
                 })
               }
             >
-              {aiCluster.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-              Run AI grouping
+              {aiCluster.isPending || clusterJobActive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+              {clusterJobActive ? "Grouping..." : "Run AI grouping"}
             </Button>
           </DialogFooter>
         </DialogContent>

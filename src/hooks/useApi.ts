@@ -2,6 +2,26 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, apiPost, apiPatch, apiDelete } from "../lib/api";
 import { useAuthStore } from "../stores/authStore";
 
+export type ClusterJobResponse = {
+  job_id: string;
+  status: "queued";
+};
+
+export type ClusterStatusResponse = {
+  job_id: string;
+  status: "queued" | "running" | "complete" | "failed";
+  result?: {
+    projects?: any[];
+    unclustered_count?: number;
+    total_conversations?: number;
+  };
+  error_message?: string;
+};
+
+export function getClusterStatus(jobId: string) {
+  return apiFetch<ClusterStatusResponse>(`/projects/cluster-status/${jobId}`);
+}
+
 // Helper used by raw-fetch multipart uploads — reads from zustand, not localStorage
 function getAuthHeader(): Record<string, string> {
   const token = useAuthStore.getState().token;
@@ -118,10 +138,8 @@ export const useUploads = () =>
 
 // Clustering
 export const useTriggerClustering = () => {
-  const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => apiPost<any>("/projects/cluster", {}),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),
+    mutationFn: () => apiPost<ClusterJobResponse>("/projects/cluster", {}),
   });
 };
 
@@ -216,18 +234,24 @@ export const useAiClusterEstimate = () =>
   useAuthQuery(["ai-cluster-estimate"], () => apiFetch<any>("/projects/ai-cluster/estimate"));
 
 export const useAiCluster = () => {
-  const qc = useQueryClient();
   return useMutation({
     mutationFn: (body?: { source_id?: string; tier?: "free" | "paid" | "premium" }) => {
       const tier = body?.tier ?? "free";
       if (tier === "free") {
-        return apiPost<any>("/projects/cluster", {});
+        return apiPost<ClusterJobResponse>("/projects/cluster", {});
       }
-      return apiPost<any>("/projects/ai-cluster", body ?? {});
+      return apiPost<ClusterJobResponse>("/projects/ai-cluster", body ?? {});
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),
   });
 };
+
+export const useClusterStatus = (jobId: string | null, enabled = true) =>
+  useQuery({
+    queryKey: ["cluster-status", jobId],
+    queryFn: () => getClusterStatus(jobId!),
+    enabled: !!jobId && enabled,
+    refetchInterval: enabled && jobId ? 1500 : false,
+  });
 
 // Proof Pages — mutations
 export const useCreateProofPage = () => {

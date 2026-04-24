@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Sparkles, Lock, CreditCard, Bitcoin, ExternalLink, Loader2, AlertCircle, CheckCircle2, Tag } from "lucide-react";
 import React, { useState } from "react";
-import { usePaymentConfig } from "../../hooks/useApi";
+import { getClusterStatus, usePaymentConfig } from "../../hooks/useApi";
 import { apiFetch, apiPost } from "../../lib/api";
 import { useUnlockStore } from "../../stores/unlockStore";
 import SquarePaymentForm from "./SquarePaymentForm";
@@ -37,6 +37,8 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
   const [successOpen, setSuccessOpen] = useState(false);
   const [successMethod, setSuccessMethod] = useState<string>("Card");
   const [successAmount, setSuccessAmount] = useState<string>("$5.00");
+  const [clusterJobId, setClusterJobId] = useState<string | null>(null);
+  const [clusterStatus, setClusterStatus] = useState<"queued" | "running" | "complete" | "failed" | null>(null);
 
   const isFreeWithCoupon = couponApplied && couponFinalCents === 0;
 
@@ -75,16 +77,22 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
     amount: string,
     options?: { runCluster?: boolean },
   ) => {
-    setUnlocked();
     setSuccessMethod(method);
     setSuccessAmount(amount);
-    onOpenChange(false);
-    setSuccessOpen(true);
     if (options?.runCluster) {
       // Coupon + crypto flows only create/grant the unlock. They still need
       // the paid clustering request after the payment record is visible.
-      await apiPost("/projects/ai-cluster", { tier: "paid" });
+      setCryptoInvoiceId(null);
+      setCryptoInvoiceUrl(null);
+      setClusterStatus("queued");
+      const job = await apiPost<{ job_id: string; status: "queued" }>("/projects/ai-cluster", { tier: "paid" });
+      if (!job?.job_id) throw new Error("AI Sort did not return a job id");
+      setClusterJobId(job.job_id);
+      return;
     }
+    setUnlocked();
+    onOpenChange(false);
+    setSuccessOpen(true);
   };
 
   const handleFreeUnlock = async () => {
@@ -99,6 +107,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
   };
 
   const handleClose = (open: boolean) => {
+    if (!open && clusterJobId) return;
     if (!open) {
       setTab("card");
       setError(null);
@@ -109,6 +118,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
       setCouponApplied(false);
       setCouponDiscount(0);
       setCouponFinalCents(0);
+      setClusterStatus(null);
     }
     onOpenChange(open);
   };
@@ -118,7 +128,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
     setCardLoading(true);
     try {
       await apiPost("/payments/ai-sort", { source_id: sourceId });
-      await triggerUnlock("Card", "$5.00");
+      await triggerUnlock("Card", "$5.00", { runCluster: true });
     } catch (e: any) {
       setError(e.message || "Payment failed. Please try again.");
     } finally {
@@ -173,6 +183,40 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cryptoInvoiceId, open]);
+
+  React.useEffect(() => {
+    if (!clusterJobId) return;
+
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const status = await getClusterStatus(clusterJobId);
+        if (cancelled) return;
+        setClusterStatus(status.status);
+        if (status.status === "complete") {
+          setUnlocked();
+          setClusterJobId(null);
+          onOpenChange(false);
+          setSuccessOpen(true);
+        }
+        if (status.status === "failed") {
+          setClusterJobId(null);
+          setError(status.error_message || "AI Sort failed. Please try again.");
+        }
+      } catch (e: any) {
+        if (!cancelled) setError(e?.message || "Could not check AI Sort status.");
+      }
+    };
+
+    poll();
+    const interval = setInterval(poll, 1500);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [clusterJobId, onOpenChange, setUnlocked]);
+
+  const clusterRunning = !!clusterJobId;
 
   return (
     <>
@@ -273,9 +317,11 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
           {/* Free unlock with coupon */}
           {isFreeWithCoupon ? (
             <div className="space-y-3">
-              <Button className="w-full" size="lg" onClick={handleFreeUnlock} disabled={unlocking || !paymentsLive}>
+              <Button className="w-full" size="lg" onClick={handleFreeUnlock} disabled={unlocking || clusterRunning || !paymentsLive}>
                 {unlocking ? (
                   <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Running AI Sort...</>
+                ) : clusterRunning ? (
+                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> AI Sort {clusterStatus || "queued"}...</>
                 ) : (
                   <><Sparkles className="mr-2 h-5 w-5" /> {paymentsLive ? "Unlock — Free" : "Under construction"}</>
                 )}
@@ -321,6 +367,13 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
               </div>
             )}
 
+            {clusterRunning && (
+              <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-[13px] text-blue-800">
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                AI Sort {clusterStatus === "running" ? "is grouping your conversations" : "is queued"}
+              </div>
+            )}
+
             {/* Card tab */}
             {tab === "card" && (
               <>
@@ -336,7 +389,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
                     onToken={handleCardToken}
                     onCancel={() => onOpenChange(false)}
                     submitLabel={paymentsLive ? "Pay $5" : "Under construction"}
-                    loading={cardLoading || !paymentsLive}
+                    loading={cardLoading || clusterRunning || !paymentsLive}
                   />
                 ) : (
                   <div className="flex items-center gap-2 text-[13px] text-[#717182]">
@@ -408,6 +461,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
                           setCryptoStatus("waiting");
                           setError(null);
                         }}
+                        disabled={clusterRunning}
                       >
                         Back
                       </Button>
