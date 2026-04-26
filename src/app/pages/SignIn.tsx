@@ -46,13 +46,13 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F4ED] text-[#161616]">
-      <div className="mx-auto max-w-md px-6 py-10">
+    <div className="flex min-h-screen items-center justify-center bg-[#F7F4ED] px-4 py-10 text-[#161616]">
+      <div className="w-full max-w-md rounded-lg border border-[#D8D2C4] bg-white p-6 shadow-sm">
         <Link to="/" className="text-[13px] text-[#5C5C5C] hover:text-[#161616]">
           &lt;-- back to home
         </Link>
 
-        <form className="mt-10 flex gap-2" onSubmit={submit}>
+        <form className="mt-8 flex gap-2" onSubmit={submit}>
           <input
             type="email"
             value={email}
