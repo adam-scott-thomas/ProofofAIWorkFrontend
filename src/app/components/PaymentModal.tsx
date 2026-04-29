@@ -85,7 +85,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
       setCryptoInvoiceUrl(null);
       setClusterStatus("queued");
       const job = await apiPost<{ job_id: string; status: "queued" }>("/projects/ai-cluster", { tier: "paid" });
-      if (!job?.job_id) throw new Error("AI Sort did not return a job id");
+      if (!job?.job_id) throw new Error("AI group conversations did not return a job id");
       setClusterJobId(job.job_id);
       return;
     }
@@ -200,10 +200,10 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
         }
         if (status.status === "failed") {
           setClusterJobId(null);
-          setError(status.error_message || "AI Sort failed. Please try again.");
+          setError(status.error_message || "AI group conversations failed. Please try again.");
         }
       } catch (e: any) {
-        if (!cancelled) setError(e?.message || "Could not check AI Sort status.");
+        if (!cancelled) setError(e?.message || "Could not check AI group conversations status.");
       }
     };
 
@@ -224,10 +224,10 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Sparkles className="h-5 w-5" />
-            Run AI Sort
+            AI group conversations
           </DialogTitle>
           <DialogDescription>
-            Preview your results and complete payment to unlock AI-organized work
+            Complete payment to unlock AI grouping credits and group your conversations.
           </DialogDescription>
         </DialogHeader>
 
@@ -312,9 +312,9 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
             <div className="space-y-3">
               <Button className="w-full" size="lg" onClick={handleFreeUnlock} disabled={unlocking || clusterRunning}>
                 {unlocking ? (
-                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Running AI Sort...</>
+                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Running AI group conversations...</>
                 ) : clusterRunning ? (
-                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> AI Sort {clusterStatus || "queued"}...</>
+                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> AI group conversations {clusterStatus || "queued"}...</>
                 ) : (
                   <><Sparkles className="mr-2 h-5 w-5" /> Unlock — Free</>
                 )}
@@ -363,7 +363,7 @@ export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalPro
             {clusterRunning && (
               <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-[13px] text-blue-800">
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-                AI Sort {clusterStatus === "running" ? "is grouping your conversations" : "is queued"}
+                AI group conversations {clusterStatus === "running" ? "is running" : "is queued"}
               </div>
             )}
 

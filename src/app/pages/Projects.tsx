@@ -20,6 +20,7 @@ import { Button } from "../components/ui/button";
 import { Checkbox } from "../components/ui/checkbox";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
+import { PaymentModal } from "../components/PaymentModal";
 import {
   Dialog,
   DialogContent,
@@ -30,15 +31,15 @@ import {
 } from "../components/ui/dialog";
 import {
   useAiClusterEstimate,
+  useAiCluster,
   useBulkDeleteProjects,
   useClearSuggestedProjects,
   useClusterStatus,
   useCreateProject,
   useDeleteProject,
   useProjects,
-  useReclusterProjects,
 } from "../../hooks/useApi";
-import { apiPost } from "../../lib/api";
+import { ApiError, apiPost } from "../../lib/api";
 import { asArray, isoDate } from "../lib/poaw";
 
 type Project = {
@@ -77,7 +78,7 @@ export default function Projects() {
   const deleteProject = useDeleteProject();
   const bulkDeleteProjects = useBulkDeleteProjects();
   const clearSuggestedProjects = useClearSuggestedProjects();
-  const reclusterProjects = useReclusterProjects();
+  const aiCluster = useAiCluster();
   const estimate = useAiClusterEstimate();
 
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -90,6 +91,7 @@ export default function Projects() {
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
   const [clusterJobId, setClusterJobId] = useState<string | null>(null);
   const [clusterFinalized, setClusterFinalized] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const clusterStatus = useClusterStatus(clusterJobId, !clusterFinalized);
@@ -143,7 +145,7 @@ export default function Projects() {
 
     if (status === "failed") {
       setClusterFinalized(true);
-      toast.error(clusterStatus.data.error_message || "AI clustering failed");
+      toast.error(clusterStatus.data.error_message || "AI group conversations failed");
     }
   }, [clusterFinalized, clusterJobId, clusterStatus.data, queryClient]);
 
@@ -212,7 +214,7 @@ export default function Projects() {
               </Button>
               <Button variant="outline" onClick={() => setClusterOpen(true)}>
                 <Sparkles className="mr-2 h-4 w-4" />
-                Try AI clustering
+                AI group conversations
               </Button>
             </div>
           </div>
@@ -283,7 +285,7 @@ export default function Projects() {
                 <>
                   No projects yet.{" "}
                   <button type="button" onClick={() => setClusterOpen(true)} className="underline">
-                    Run clustering
+                    AI group conversations
                   </button>{" "}
                   or create one manually.
                 </>
@@ -373,10 +375,9 @@ export default function Projects() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Try AI clustering</DialogTitle>
+            <DialogTitle>AI group conversations</DialogTitle>
             <DialogDescription>
-              Dissolves current suggested projects and asks the AI clusterer to regroup unassigned conversations.
-              Confirmed work is untouched.
+              Ask the AI grouping service to organize unassigned conversations into suggested projects. Confirmed work is untouched.
             </DialogDescription>
           </DialogHeader>
           {estimate.data ? (
@@ -399,12 +400,12 @@ export default function Projects() {
                 {clusterJobActive ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
                 <span className="font-medium">
                   {clusterStatus.data?.status === "complete"
-                    ? "AI clustering complete"
+                    ? "AI group conversations complete"
                     : clusterStatus.data?.status === "failed"
-                      ? "AI clustering failed"
+                      ? "AI group conversations failed"
                       : clusterStatus.data?.status === "running"
-                        ? "AI clustering conversations"
-                        : "AI clustering queued"}
+                        ? "AI is grouping conversations"
+                        : "AI group conversations queued"}
                 </span>
               </div>
               {clusterStatus.data?.status === "complete" ? (
@@ -415,16 +416,16 @@ export default function Projects() {
               ) : null}
               {clusterStatus.data?.status === "failed" ? (
                 <div className="mt-1 text-[12px]">
-                  {clusterStatus.data.error_message || "The AI clustering job failed."}
+                  {clusterStatus.data.error_message || "AI group conversations failed."}
                 </div>
               ) : null}
             </div>
           ) : null}
-          {reclusterProjects.isPending && !clusterJobId ? (
+          {aiCluster.isPending && !clusterJobId ? (
             <div className="rounded-md border border-[#D8D2C4] bg-[#FBF8F1] p-3 text-[13px] text-[#5C5C5C]">
               <div className="flex items-center gap-2">
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-[#315D8A]" />
-                <span className="font-medium">Calling AI clustering API...</span>
+                <span className="font-medium">Calling AI group conversations API...</span>
               </div>
               <div className="mt-1 text-[12px]">Waiting for the backend to accept the job.</div>
             </div>
@@ -434,30 +435,31 @@ export default function Projects() {
               {clusterStatus.data?.status === "complete" || clusterStatus.data?.status === "failed" ? "Close" : "Cancel"}
             </Button>
             <Button
-              disabled={reclusterProjects.isPending || clusterJobActive}
+              disabled={aiCluster.isPending || clusterJobActive}
               onClick={() => {
-                toast.info("Calling AI clustering API...");
-                reclusterProjects.mutate({ mode: "ai", tier: "free" }, {
+                toast.info("Calling AI group conversations API...");
+                aiCluster.mutate(undefined, {
                   onSuccess: (result) => {
                     if (!result?.job_id) {
-                      toast.error("AI clustering did not return a job id");
+                      toast.error("AI group conversations did not return a job id");
                       return;
                     }
                     setClusterFinalized(false);
                     setClusterJobId(result.job_id);
-                    toast.success("AI clustering job queued");
-                    if (result.dissolved_suggestions > 0) {
-                      toast.success(`Dissolved ${result.dissolved_suggestions} suggested project${result.dissolved_suggestions === 1 ? "" : "s"}`);
-                    }
+                    toast.success("AI group conversations job queued");
                   },
                   onError: (error: any) => {
-                    toast.error(error?.message ?? "AI clustering failed");
+                    if (error instanceof ApiError && error.status === 402) {
+                      setPaymentOpen(true);
+                      return;
+                    }
+                    toast.error(error?.message ?? "AI group conversations failed");
                   },
                 });
               }}
             >
-              {reclusterProjects.isPending || clusterJobActive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-              {reclusterProjects.isPending ? "Calling API..." : clusterJobActive ? "AI thinking..." : "Try AI clustering"}
+              {aiCluster.isPending || clusterJobActive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+              {aiCluster.isPending ? "Calling API..." : clusterJobActive ? "AI thinking..." : "AI group conversations"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -558,6 +560,14 @@ export default function Projects() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <PaymentModal
+        open={paymentOpen}
+        onOpenChange={setPaymentOpen}
+        onComplete={() => {
+          queryClient.invalidateQueries({ queryKey: ["projects"] });
+          queryClient.invalidateQueries({ queryKey: ["pool"] });
+        }}
+      />
     </div>
   );
 }

@@ -30,7 +30,7 @@ const ENTRIES: Entry[] = [
   {
     href: "/app/settings/billing",
     title: "Billing & model tier",
-    description: "Saved card, subscription tier, AI Sort credits, micro purchases.",
+    description: "Saved card, subscription tier, AI grouping credits, Starter Pack.",
     icon: CreditCard,
   },
   {

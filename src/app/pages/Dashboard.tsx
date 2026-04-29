@@ -22,6 +22,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
+import { PaymentModal } from "../components/PaymentModal";
 import {
   useAssessments,
   useAiCluster,
@@ -33,7 +34,7 @@ import {
   useProofPages,
   useWorkProfile,
 } from "../../hooks/useApi";
-import { apiFetch, apiPost } from "../../lib/api";
+import { ApiError, apiFetch, apiPost } from "../../lib/api";
 import { asArray, dateTime, proofPagePath } from "../lib/poaw";
 
 type ActivityEvent = {
@@ -148,6 +149,7 @@ export default function Dashboard() {
   const aiCluster = useAiCluster();
   const [clusterJobId, setClusterJobId] = useState<string | null>(null);
   const [clusterFinalized, setClusterFinalized] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const clusterStatus = useClusterStatus(clusterJobId, !clusterFinalized);
 
   const directoryQuery = useQuery<DirectoryStatus>({
@@ -385,7 +387,7 @@ export default function Dashboard() {
                   <div className="text-[12px] uppercase tracking-[0.14em] text-[rgba(255,255,255,0.58)]">AI controls</div>
                   <h2 className="mt-2 text-2xl tracking-tight">Turn the pool into project intelligence.</h2>
                   <p className="mt-2 text-[13px] leading-relaxed text-[rgba(255,255,255,0.72)]">
-                    Payments can wait. The useful buttons are here: cluster the pool, shape the projects, then push the strongest stream into assessment.
+                    Group the pool, shape the projects, then push the strongest stream into assessment.
                   </p>
                 </div>
                 <div className="min-w-[220px] rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] p-4">
@@ -412,14 +414,14 @@ export default function Dashboard() {
                     {aiCluster.isPending || clusterJobActive ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
                     <span>
                       {aiCluster.isPending
-                        ? "Calling clustering API..."
+                        ? "Calling AI group conversations API..."
                         : clusterStatus.data?.status === "complete"
-                          ? "AI grouping complete."
+                          ? "AI group conversations complete."
                           : clusterStatus.data?.status === "failed"
-                            ? "AI grouping failed."
+                            ? "AI group conversations failed."
                             : clusterStatus.data?.status === "running"
                               ? "AI is grouping conversations..."
-                              : "AI grouping job queued."}
+                              : "AI group conversations job queued."}
                     </span>
                   </div>
                 </div>
@@ -428,25 +430,31 @@ export default function Dashboard() {
                 <Button
                   type="button"
                   onClick={() => {
-                    toast.info("Calling clustering API...");
-                    aiCluster.mutate({ tier: "free" }, {
+                    toast.info("Calling AI group conversations API...");
+                    aiCluster.mutate(undefined, {
                       onSuccess: (result: any) => {
                         if (!result?.job_id) {
-                          toast.error("Grouping did not return a job id");
+                          toast.error("AI group conversations did not return a job id");
                           return;
                         }
                         setClusterFinalized(false);
                         setClusterJobId(result.job_id);
-                        toast.success("AI grouping job queued");
+                        toast.success("AI group conversations job queued");
                       },
-                      onError: (error: any) => toast.error(error?.message ?? "Grouping failed"),
+                      onError: (error: any) => {
+                        if (error instanceof ApiError && error.status === 402) {
+                          setPaymentOpen(true);
+                          return;
+                        }
+                        toast.error(error?.message ?? "AI group conversations failed");
+                      },
                     });
                   }}
                   disabled={aiCluster.isPending || clusterJobActive || totalConversations === 0}
                   className="bg-white text-[#111114] hover:bg-[#F3EEE2]"
                 >
                   {aiCluster.isPending || clusterJobActive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                  {aiCluster.isPending ? "Calling API..." : clusterJobActive ? "AI thinking..." : "Run AI grouping"}
+                  {aiCluster.isPending ? "Calling API..." : clusterJobActive ? "AI thinking..." : "AI group conversations"}
                 </Button>
                 <Link to="/app/projects">
                   <Button type="button" variant="outline" className="border-[rgba(255,255,255,0.18)] bg-transparent text-white hover:bg-[rgba(255,255,255,0.08)] hover:text-white">
@@ -458,12 +466,6 @@ export default function Dashboard() {
                   <Button type="button" variant="outline" className="border-[rgba(255,255,255,0.18)] bg-transparent text-white hover:bg-[rgba(255,255,255,0.08)] hover:text-white">
                     <UploadIcon className="mr-2 h-4 w-4" />
                     Feed the pool
-                  </Button>
-                </Link>
-                <Link to="/app/settings/billing">
-                  <Button type="button" variant="outline" className="border-[rgba(255,255,255,0.18)] bg-transparent text-white hover:bg-[rgba(255,255,255,0.08)] hover:text-white">
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Unlock GPT-5.4 / Opus
                   </Button>
                 </Link>
               </div>
@@ -732,6 +734,14 @@ export default function Dashboard() {
           </section>
         </div>
       </div>
+      <PaymentModal
+        open={paymentOpen}
+        onOpenChange={setPaymentOpen}
+        onComplete={() => {
+          queryClient.invalidateQueries({ queryKey: ["projects"] });
+          queryClient.invalidateQueries({ queryKey: ["pool"] });
+        }}
+      />
     </div>
   );
 }

@@ -50,7 +50,7 @@ export default function KnowledgeMapPage() {
           <div className="flex flex-col items-center justify-center py-32 text-center">
             <p className="text-[15px] text-[#717182]">No projects yet.</p>
             <p className="mt-2 text-[13px] text-[#717182]">
-              Upload conversations and run AI Sort to see your knowledge map.
+              Upload conversations and run AI group conversations to see your knowledge map.
             </p>
           </div>
         ) : (

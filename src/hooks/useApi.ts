@@ -297,13 +297,8 @@ export const useAiClusterEstimate = () =>
 
 export const useAiCluster = () => {
   return useMutation({
-    mutationFn: (body?: { source_id?: string; tier?: "free" | "paid" | "premium" }) => {
-      const tier = body?.tier ?? "free";
-      if (tier === "free") {
-        return apiPost<ClusterJobResponse>("/projects/cluster", {});
-      }
-      return apiPost<ClusterJobResponse>("/projects/ai-cluster", body ?? {});
-    },
+    mutationFn: (body?: { source_id?: string; tier?: "free" | "paid" | "premium" }) =>
+      apiPost<ClusterJobResponse>("/projects/ai-cluster", body ?? {}),
   });
 };
 

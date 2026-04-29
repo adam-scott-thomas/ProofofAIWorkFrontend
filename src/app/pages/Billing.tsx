@@ -61,7 +61,7 @@ export default function Billing() {
       setCryptoInvoiceUrl(null);
       setSuccessMsg(
         cryptoFeature === "ai_sort"
-          ? "Crypto payment confirmed. Premium AI grouping is unlocked on this account."
+          ? "Crypto payment confirmed. AI grouping credits are unlocked on this account."
           : "Crypto payment confirmed! Feature activated."
       );
       setCryptoFeature(null);
@@ -288,10 +288,10 @@ export default function Billing() {
         {/* Micro purchases */}
         <Card className="border border-[rgba(0,0,0,0.08)] bg-white p-6 shadow-sm">
           <h2 className="text-[15px] mb-1">Micro Purchases</h2>
-          <p className="text-[13px] text-[#717182] mb-5">Pay only for what you use.</p>
+          <p className="text-[13px] text-[#717182] mb-5">Starter Pack is the preferred path. Single-feature purchases are available only where enabled.</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {[
-              { icon: Sparkles, label: "AI Sort", price: "$5", desc: "Unlock GPT-5.4 / Opus grouping", feature: "ai_sort" },
+              { icon: Sparkles, label: "AI grouping credits", price: "$5", desc: "Unlock AI group conversations", feature: "ai_sort" },
               { icon: Zap, label: "Full Assessment", price: "$7", desc: "Forensic evaluation + scores" },
               { icon: Lock, label: "Private Mode", price: "$7", desc: "Keep your proof page private" },
               { icon: Crown, label: "Premium Polish", price: "$3", desc: "Enhanced profile presentation" },
@@ -317,14 +317,14 @@ export default function Billing() {
                     if (feature === "ai_sort") {
                       handleCryptoFeaturePurchase(
                         "ai_sort",
-                        "NOWPayments invoice opened for premium AI grouping. Once it confirms, run GPT-5.4 / Opus grouping from the dashboard."
+                        "NOWPayments invoice opened for AI grouping credits. Once it confirms, run AI group conversations from the dashboard."
                       );
                       return;
                     }
                     toast.info("Coming soon");
                   }}
                 >
-                  {feature === "ai_sort" ? "Unlock" : "Buy"}
+                  {feature === "ai_sort" ? "Unlock credits" : "Buy"}
                 </Button>
               </div>
             ))}
@@ -333,14 +333,14 @@ export default function Billing() {
 
         {/* Bundles */}
         <Card className="border border-[rgba(0,0,0,0.08)] bg-white p-6 shadow-sm">
-          <h2 className="text-[15px] mb-1">Bundles</h2>
+          <h2 className="text-[15px] mb-1">Starter Pack</h2>
           <p className="text-[13px] text-[#717182] mb-5">Unlock everything at a flat rate.</p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="rounded-lg border border-[rgba(0,0,0,0.08)] bg-[#FAFAFA] p-5">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Package className="h-4 w-4 text-[#717182]" />
-                  <span className="text-[14px] font-medium">Unlock All for 90 Days</span>
+                  <span className="text-[14px] font-medium">Starter Pack — 90 Days</span>
                 </div>
                 <span className="font-mono text-[15px] text-[#030213]">$24</span>
               </div>
@@ -385,7 +385,7 @@ export default function Billing() {
             <h2 className="text-[15px] mb-4">Paywall Status</h2>
             <div className="space-y-3">
               {[
-                { feature: "ai_sort", label: "AI Sort", flag: flags.paywall_ai_sort },
+                { feature: "ai_sort", label: "AI grouping credits", flag: flags.paywall_ai_sort },
                 { feature: "student_publish", label: "Student Proof Publish", flag: flags.paywall_student_publish },
                 { feature: "evaluation", label: "Full Assessment", flag: flags.paywall_evaluation },
                 { feature: "premium_model", label: "Premium Model Upgrade", flag: flags.paywall_premium_model },

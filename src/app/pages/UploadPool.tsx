@@ -15,6 +15,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { PaymentModal } from "../components/PaymentModal";
 import {
   Dialog,
   DialogContent,
@@ -29,9 +30,8 @@ import {
   useClearUnassignedPool,
   useClusterStatus,
   usePool,
-  useReclusterProjects,
 } from "../../hooks/useApi";
-import { apiDelete, apiPost } from "../../lib/api";
+import { ApiError, apiDelete, apiPost } from "../../lib/api";
 import { dateTime } from "../lib/poaw";
 
 type PoolConversation = {
@@ -50,7 +50,6 @@ type PoolConversation = {
 };
 
 type FilterKey = "all" | "unassigned" | "assigned";
-type ClusterMode = "rule" | "ai";
 
 const FILTERS: Array<{ key: FilterKey; label: string }> = [
   { key: "all", label: "All" },
@@ -69,13 +68,12 @@ export default function UploadPool() {
   const queryClient = useQueryClient();
   const { data, isLoading } = usePool();
   const aiCluster = useAiCluster();
-  const reclusterProjects = useReclusterProjects();
   const clearUnassignedPool = useClearUnassignedPool();
   const estimate = useAiClusterEstimate();
   const [filter, setFilter] = useState<FilterKey>("all");
   const [query, setQuery] = useState("");
   const [clusterOpen, setClusterOpen] = useState(false);
-  const [clusterMode, setClusterMode] = useState<ClusterMode>("rule");
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const [cleanupOpen, setCleanupOpen] = useState(false);
   const [clearUnassignedOpen, setClearUnassignedOpen] = useState(false);
   const [clusterJobId, setClusterJobId] = useState<string | null>(null);
@@ -193,25 +191,11 @@ export default function UploadPool() {
               </Link>
               <Button
                 variant="outline"
-                onClick={() => {
-                  setClusterMode("rule");
-                  setClusterOpen(true);
-                }}
+                onClick={() => setClusterOpen(true)}
                 disabled={counts.unassigned === 0}
               >
                 <Sparkles className="mr-2 h-4 w-4" />
-                Cluster unassigned
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setClusterMode("ai");
-                  setClusterOpen(true);
-                }}
-                disabled={counts.unassigned === 0}
-              >
-                <Sparkles className="mr-2 h-4 w-4" />
-                Try AI clustering
+                AI group conversations
               </Button>
               <Button variant="ghost" onClick={() => setClearUnassignedOpen(true)} disabled={counts.unassigned === 0}>
                 <Trash2 className="mr-2 h-4 w-4" />
@@ -329,11 +313,9 @@ export default function UploadPool() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{clusterMode === "ai" ? "Try AI clustering" : "Cluster unassigned conversations"}</DialogTitle>
+            <DialogTitle>AI group conversations</DialogTitle>
             <DialogDescription>
-              {clusterMode === "ai"
-                ? "Dissolves current suggested projects and asks the AI clusterer to regroup unassigned conversations. Confirmed work is untouched."
-                : "The engine groups similar conversations into suggested projects. You confirm or rename each project before running an assessment."}
+              Ask the AI grouping service to organize unassigned conversations into suggested projects. Confirmed work is untouched.
             </DialogDescription>
           </DialogHeader>
           {estimate.data ? (
@@ -356,12 +338,12 @@ export default function UploadPool() {
                 {clusterJobActive ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
                 <span className="font-medium">
                   {clusterStatus.data?.status === "complete"
-                    ? "Grouping complete"
+                    ? "AI group conversations complete"
                     : clusterStatus.data?.status === "failed"
-                      ? "Grouping failed"
+                      ? "AI group conversations failed"
                       : clusterStatus.data?.status === "running"
-                        ? "Grouping conversations"
-                        : "Grouping queued"}
+                        ? "AI is grouping conversations"
+                        : "AI group conversations queued"}
                 </span>
               </div>
               {clusterStatus.data?.status === "complete" ? (
@@ -372,16 +354,16 @@ export default function UploadPool() {
               ) : null}
               {clusterStatus.data?.status === "failed" ? (
                 <div className="mt-1 text-[12px]">
-                  {clusterStatus.data.error_message || "The clustering job failed."}
+                  {clusterStatus.data.error_message || "AI group conversations failed."}
                 </div>
               ) : null}
             </div>
           ) : null}
-          {(aiCluster.isPending || reclusterProjects.isPending) && !clusterJobId ? (
+          {aiCluster.isPending && !clusterJobId ? (
             <div className="rounded-md border border-[#D8D2C4] bg-[#FBF8F1] p-3 text-[13px] text-[#5C5C5C]">
               <div className="flex items-center gap-2">
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-[#315D8A]" />
-                <span className="font-medium">Calling {clusterMode === "ai" ? "AI " : ""}clustering API...</span>
+                <span className="font-medium">Calling AI group conversations API...</span>
               </div>
               <div className="mt-1 text-[12px]">Waiting for the backend to accept the job.</div>
             </div>
@@ -391,36 +373,35 @@ export default function UploadPool() {
               {clusterStatus.data?.status === "complete" || clusterStatus.data?.status === "failed" ? "Close" : "Cancel"}
             </Button>
             <Button
-              disabled={aiCluster.isPending || reclusterProjects.isPending || clusterJobActive}
+              disabled={aiCluster.isPending || clusterJobActive}
               onClick={() => {
-                toast.info(`Calling ${clusterMode === "ai" ? "AI " : ""}clustering API...`);
-                const mutation = clusterMode === "ai" ? reclusterProjects : aiCluster;
-                const body = clusterMode === "ai" ? { mode: "ai" as const, tier: "free" as const } : { tier: "free" as const };
-                mutation.mutate(body as any, {
+                toast.info("Calling AI group conversations API...");
+                aiCluster.mutate(undefined, {
                   onSuccess: (result: any) => {
                     if (!result?.job_id) {
-                      toast.error("Grouping did not return a job id");
+                      toast.error("AI group conversations did not return a job id");
                       return;
                     }
                     setClusterFinalized(false);
                     setClusterJobId(result.job_id);
-                    toast.success(`${clusterMode === "ai" ? "AI " : ""}grouping job queued`);
-                    if (result.dissolved_suggestions > 0) {
-                      toast.success(`Dissolved ${result.dissolved_suggestions} suggested project${result.dissolved_suggestions === 1 ? "" : "s"}`);
-                    }
+                    toast.success("AI group conversations job queued");
                   },
                   onError: (error: any) => {
-                    toast.error(error?.message ?? "Grouping failed");
+                    if (error instanceof ApiError && error.status === 402) {
+                      setPaymentOpen(true);
+                      return;
+                    }
+                    toast.error(error?.message ?? "AI group conversations failed");
                   },
                 });
               }}
             >
-              {aiCluster.isPending || reclusterProjects.isPending || clusterJobActive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-              {aiCluster.isPending || reclusterProjects.isPending
+              {aiCluster.isPending || clusterJobActive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+              {aiCluster.isPending
                 ? "Calling API..."
                 : clusterJobActive
-                  ? clusterMode === "ai" ? "AI thinking..." : "Grouping..."
-                  : clusterMode === "ai" ? "Try AI clustering" : "Run grouping"}
+                  ? "AI thinking..."
+                  : "AI group conversations"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -479,6 +460,14 @@ export default function UploadPool() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <PaymentModal
+        open={paymentOpen}
+        onOpenChange={setPaymentOpen}
+        onComplete={() => {
+          queryClient.invalidateQueries({ queryKey: ["projects"] });
+          queryClient.invalidateQueries({ queryKey: ["pool"] });
+        }}
+      />
     </div>
   );
 }

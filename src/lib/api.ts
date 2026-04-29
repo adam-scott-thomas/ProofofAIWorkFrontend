@@ -6,6 +6,18 @@ const API_BASE = API_HOST ? `${API_HOST}/api/v1` : "/api/v1";
 // Prevent multiple 401 redirects from parallel requests
 let redirecting = false;
 
+export class ApiError extends Error {
+  status: number;
+  payload: unknown;
+
+  constructor(message: string, status: number, payload: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.payload = payload;
+  }
+}
+
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = useAuthStore.getState().token;
   const url = `${API_BASE}${path}`;
@@ -46,7 +58,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
       err?.message ||
       res.statusText ||
       `${res.status}`;
-    throw new Error(msg);
+    throw new ApiError(msg, res.status, err);
   }
   if (res.status === 204) return undefined as T;
   return res.json();
