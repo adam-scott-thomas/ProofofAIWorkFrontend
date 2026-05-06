@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "check:content": "node scripts/validate-marketing-content.mjs",
     "dev": "vite"
   },
   "dependencies": {
