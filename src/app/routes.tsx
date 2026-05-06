@@ -3,12 +3,14 @@ import SiteLayout from "../marketing/components/SiteLayout";
 import AboutPage from "../marketing/pages/AboutPage";
 import BlogIndexPage from "../marketing/pages/BlogIndexPage";
 import BlogPostPage from "../marketing/pages/BlogPostPage";
+import CommunityPage from "../marketing/pages/CommunityPage";
 import EmployersPage from "../marketing/pages/EmployersPage";
 import ExamplesPage from "../marketing/pages/ExamplesPage";
 import HomePage from "../marketing/pages/HomePage";
 import JobSeekersPage from "../marketing/pages/JobSeekersPage";
 import LegalPage from "../marketing/pages/LegalPage";
 import NotFoundPage from "../marketing/pages/NotFoundPage";
+import ProofPage from "../marketing/pages/ProofPage";
 import QuizPage from "../marketing/pages/QuizPage";
 import QuizzesPage from "../marketing/pages/QuizzesPage";
 import ScoresPage from "../marketing/pages/ScoresPage";
@@ -24,6 +26,8 @@ export const router = createBrowserRouter([
       { path: "quizzes/ai-work-style", element: <QuizPage quizSlug="ai-work-style" /> },
       { path: "blog", element: <BlogIndexPage /> },
       { path: "blog/:slug", element: <BlogPostPage /> },
+      { path: "community", element: <CommunityPage /> },
+      { path: "proof/:slug", element: <ProofPage /> },
       { path: "scores", element: <ScoresPage /> },
       { path: "examples", element: <ExamplesPage /> },
       { path: "employers", element: <EmployersPage /> },

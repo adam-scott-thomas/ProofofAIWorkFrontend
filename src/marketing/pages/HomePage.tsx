@@ -147,6 +147,29 @@ export default function HomePage() {
         </div>
       </Section>
 
+      <Section
+        eyebrow="Public proof layer"
+        title="Canonical proof pages live on proofofaiwork.com"
+        lead="When users publish receipts, the public record resolves at /proof/:slug with only public-safe score and evidence fields."
+      >
+        <div className="two-column">
+          <Link className="feature-panel" to="/community">
+            <h3>Community board</h3>
+            <p>Browse published public receipts as soon as the backend list endpoint is available.</p>
+            <span className="text-link">
+              Open community <ArrowRight size={18} />
+            </span>
+          </Link>
+          <a className="feature-panel" href={APP_URL}>
+            <h3>Upload and analyze</h3>
+            <p>Generate a verified receipt from real AI work in the app experience.</p>
+            <span className="text-link">
+              Go to app <ArrowRight size={18} />
+            </span>
+          </a>
+        </div>
+      </Section>
+
       <Section eyebrow="Blog" title="Field notes on AI fluency and proof">
         <div className="post-grid">
           {blogPosts.map((post) => (

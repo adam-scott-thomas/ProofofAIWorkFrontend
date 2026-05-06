@@ -688,6 +688,208 @@ p {
   color: #525252;
 }
 
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
+.proof-loading,
+.community-state {
+  display: grid;
+  min-height: 40vh;
+  place-items: center;
+  width: min(920px, calc(100% - 2rem));
+  margin-inline: auto;
+  padding: 4rem 0;
+  text-align: center;
+}
+
+.proof-page {
+  width: min(1180px, calc(100% - 2rem));
+  margin-inline: auto;
+  padding-bottom: clamp(4rem, 8vw, 7rem);
+}
+
+.proof-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.42fr);
+  gap: clamp(1.5rem, 5vw, 4rem);
+  align-items: end;
+  padding: clamp(4rem, 8vw, 7rem) 0 2.5rem;
+}
+
+.proof-hero h1 {
+  max-width: 50rem;
+  font-size: clamp(2.8rem, 7vw, 6rem);
+}
+
+.proof-topic {
+  max-width: 42rem;
+  color: #123c36;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.proof-summary {
+  max-width: 54rem;
+  font-size: 1.12rem;
+}
+
+.proof-summary.wide {
+  max-width: 68rem;
+}
+
+.proof-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+}
+
+.proof-meta-row span,
+.proof-card-label {
+  border: 1px solid rgba(18, 60, 54, 0.14);
+  border-radius: 999px;
+  padding: 0.45rem 0.65rem;
+  background: rgba(255, 253, 247, 0.72);
+  color: #123c36;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.proof-score-panel {
+  display: grid;
+  gap: 0.75rem;
+  border-radius: 1rem;
+  padding: 1rem;
+  background: #123c36;
+  color: #fffdf7;
+  box-shadow: 0 24px 64px rgba(18, 60, 54, 0.2);
+}
+
+.proof-score-panel div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(255, 253, 247, 0.16);
+  padding: 0.85rem 0;
+}
+
+.proof-score-panel div:last-child {
+  border-bottom: 0;
+}
+
+.proof-score-panel span {
+  color: rgba(255, 253, 247, 0.76);
+}
+
+.proof-score-panel strong {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.proof-section {
+  padding: clamp(2rem, 5vw, 4rem) 0;
+  border-top: 1px solid rgba(23, 23, 23, 0.1);
+}
+
+.proof-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.proof-section-head svg {
+  color: #0f766e;
+}
+
+.proof-triad,
+.evidence-card-grid,
+.community-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.community-grid {
+  margin-top: 2rem;
+}
+
+.proof-triad-item,
+.evidence-card {
+  border: 1px solid rgba(23, 23, 23, 0.1);
+  border-radius: 0.8rem;
+  padding: clamp(1.1rem, 2vw, 1.5rem);
+  background: rgba(255, 253, 247, 0.72);
+}
+
+.proof-triad-item span,
+.evidence-card span {
+  color: #0f766e;
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.proof-triad-item strong {
+  display: block;
+  margin: 0.5rem 0;
+  color: #123c36;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  line-height: 0.9;
+}
+
+.evidence-card h3 {
+  margin-top: 0.7rem;
+}
+
+.turn-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.turn-list code,
+.proof-hash code,
+.community-state code {
+  border-radius: 0.45rem;
+  padding: 0.35rem 0.5rem;
+  background: #ebe4d5;
+  color: #123c36;
+  font-size: 0.86rem;
+}
+
+.proof-hash {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.proof-hash svg {
+  color: #0f766e;
+}
+
+.proof-hash span {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #525252;
+  font-weight: 800;
+}
+
+.community-state.ready {
+  min-height: auto;
+  margin-top: 2rem;
+  border: 1px solid rgba(23, 23, 23, 0.1);
+  border-radius: 0.85rem;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  background: rgba(255, 253, 247, 0.72);
+  text-align: left;
+}
+
 @keyframes rise-in {
   from {
     opacity: 0;
@@ -707,6 +909,12 @@ p {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -737,7 +945,8 @@ p {
 
   .hero,
   .score-preview,
-  .signal-explainer {
+  .signal-explainer,
+  .proof-hero {
     grid-template-columns: 1fr;
   }
 
@@ -755,7 +964,10 @@ p {
   .two-column,
   .steps,
   .quiz-strip,
-  .post-grid {
+  .post-grid,
+  .proof-triad,
+  .evidence-card-grid,
+  .community-grid {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -784,7 +996,10 @@ p {
   .two-column,
   .steps,
   .quiz-strip,
-  .post-grid {
+  .post-grid,
+  .proof-triad,
+  .evidence-card-grid,
+  .community-grid {
     grid-template-columns: 1fr;
   }
 

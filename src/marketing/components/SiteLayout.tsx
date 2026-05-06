@@ -8,6 +8,7 @@ const navItems = [
   { href: "/examples", label: "Examples" },
   { href: "/employers", label: "Employers" },
   { href: "/job-seekers", label: "Job seekers" },
+  { href: "/community", label: "Community" },
   { href: "/quizzes", label: "Quizzes" },
   { href: "/blog", label: "Blog" },
 ];
@@ -70,6 +71,7 @@ export default function SiteLayout() {
         </div>
         <nav aria-label="Footer navigation">
           <Link to="/about">About</Link>
+          <Link to="/community">Community</Link>
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
           <a href={APP_URL}>App</a>

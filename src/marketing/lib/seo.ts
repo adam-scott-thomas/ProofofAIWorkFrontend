@@ -4,6 +4,9 @@ type SeoInput = {
   title?: string;
   description?: string;
   path?: string;
+  canonical?: string;
+  image?: string;
+  type?: "website" | "article";
 };
 
 function upsertMeta(name: string, content: string, property = false) {
@@ -27,18 +30,22 @@ function upsertCanonical(href: string) {
   element.href = href;
 }
 
-export function setSeo({ title, description, path = "" }: SeoInput) {
+export function setSeo({ title, description, path = "", canonical: canonicalOverride, image, type = "website" }: SeoInput) {
   const pageTitle = title ? `${title} | ProofOfAIWork` : siteMetadata.title;
   const pageDescription = description ?? siteMetadata.description;
-  const canonical = `${siteMetadata.canonical}${path}`;
+  const canonical = canonicalOverride ?? `${siteMetadata.canonical}${path}`;
 
   document.title = pageTitle;
   upsertMeta("description", pageDescription);
   upsertMeta("og:title", pageTitle, true);
   upsertMeta("og:description", pageDescription, true);
-  upsertMeta("og:type", "website", true);
+  upsertMeta("og:type", type, true);
   upsertMeta("og:url", canonical, true);
-  upsertMeta("twitter:card", "summary_large_image");
+  if (image) {
+    upsertMeta("og:image", image, true);
+    upsertMeta("twitter:image", image);
+  }
+  upsertMeta("twitter:card", image ? "summary_large_image" : "summary");
   upsertMeta("twitter:title", pageTitle);
   upsertMeta("twitter:description", pageDescription);
   upsertCanonical(canonical);

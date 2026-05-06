@@ -1,4 +1,5 @@
 export const APP_URL = "https://app.proofofaiwork.com";
+export const PUBLIC_API_BASE = "https://api.proofofaiwork.com/v1";
 
 export const PRIMARY_CTA = "Get your verified AI Work Score";
 export const SECONDARY_CTA = "Take the free quiz";
