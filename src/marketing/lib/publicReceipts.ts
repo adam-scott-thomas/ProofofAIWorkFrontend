@@ -135,16 +135,44 @@ function turnsField(value: unknown) {
     .slice(0, 5);
 }
 
-function cardArray(value: unknown): PublicReceiptEvidenceCard[] {
+function evidenceCardArray(value: unknown): PublicReceiptEvidenceCard[] {
   if (!Array.isArray(value)) return [];
   return value
     .filter(isRecord)
     .map((item, index) => ({
-      id: stringField(item.id) ?? `entry-${index + 1}`,
-      title: stringField(item.title) ?? stringField(item.claim) ?? `Entry ${index + 1}`,
-      summary: stringField(item.summary) ?? stringField(item.state) ?? stringField(item.completion_status) ?? "",
-      kind: stringField(item.kind) ?? stringField(item.event_type) ?? stringField(item.artifact_type),
-      turns: turnsField(item.turns ?? item.evidence_turn_ids),
+      id: stringField(item.id) ?? `evidence-${index + 1}`,
+      title: stringField(item.claim) ?? `Evidence ${index + 1}`,
+      summary: stringField(item.claim) ?? "",
+      kind: stringField(item.kind),
+      turns: turnsField(item.evidence_turn_ids),
+    }))
+    .slice(0, 12);
+}
+
+function timelineCardArray(value: unknown): PublicReceiptEvidenceCard[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(isRecord)
+    .map((item, index) => ({
+      id: `timeline-${numberField(item.sequence) ?? index + 1}`,
+      title: stringField(item.title) ?? `Timeline ${index + 1}`,
+      summary: stringField(item.state) ?? "",
+      kind: stringField(item.event_type),
+      turns: [],
+    }))
+    .slice(0, 12);
+}
+
+function artifactCardArray(value: unknown): PublicReceiptEvidenceCard[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(isRecord)
+    .map((item, index) => ({
+      id: stringField(item.id) ?? `artifact-${index + 1}`,
+      title: stringField(item.title) ?? `Artifact ${index + 1}`,
+      summary: stringField(item.state) ?? "",
+      kind: stringField(item.artifact_type),
+      turns: [],
     }))
     .slice(0, 12);
 }
@@ -189,9 +217,9 @@ function normalizeReceipt(payload: unknown): PublicReceipt | null {
     artifacts: countField(receipt.artifacts),
     proofHash: stringField(receipt.proof_hash),
     publishedAt: stringField(receipt.published_at),
-    evidenceCards: cardArray(receipt.evidence_cards),
-    timeline: cardArray(receipt.timeline),
-    artifactCards: cardArray(receipt.artifact_cards),
+    evidenceCards: evidenceCardArray(receipt.evidence_cards),
+    timeline: timelineCardArray(receipt.timeline),
+    artifactCards: artifactCardArray(receipt.artifact_cards),
     ogImageUrl: stringField(receipt.og_image_url),
     oembedUrl: stringField(receipt.oembed_url),
     verificationState: stringField(receipt.verification_state),
