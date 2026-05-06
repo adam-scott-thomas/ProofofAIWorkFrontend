@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   ArrowRight,
@@ -6,7 +6,6 @@ import {
   FolderKanban,
   Loader2,
   Search,
-  Sparkles,
   Trash2,
   Upload as UploadIcon,
 } from "lucide-react";
@@ -15,7 +14,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { PaymentModal } from "../components/PaymentModal";
+import { AiGroupConversationsAction } from "../components/AiGroupConversationsAction";
 import {
   Dialog,
   DialogContent,
@@ -25,13 +24,10 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 import {
-  useAiCluster,
-  useAiClusterEstimate,
   useClearUnassignedPool,
-  useClusterStatus,
   usePool,
 } from "../../hooks/useApi";
-import { ApiError, apiDelete, apiPost } from "../../lib/api";
+import { apiDelete, apiPost } from "../../lib/api";
 import { dateTime } from "../lib/poaw";
 
 type PoolConversation = {
@@ -67,18 +63,11 @@ const CLASS_STYLE: Record<string, string> = {
 export default function UploadPool() {
   const queryClient = useQueryClient();
   const { data, isLoading } = usePool();
-  const aiCluster = useAiCluster();
   const clearUnassignedPool = useClearUnassignedPool();
-  const estimate = useAiClusterEstimate();
   const [filter, setFilter] = useState<FilterKey>("all");
   const [query, setQuery] = useState("");
-  const [clusterOpen, setClusterOpen] = useState(false);
-  const [paymentOpen, setPaymentOpen] = useState(false);
   const [cleanupOpen, setCleanupOpen] = useState(false);
   const [clearUnassignedOpen, setClearUnassignedOpen] = useState(false);
-  const [clusterJobId, setClusterJobId] = useState<string | null>(null);
-  const [clusterFinalized, setClusterFinalized] = useState(false);
-  const clusterStatus = useClusterStatus(clusterJobId, !clusterFinalized);
 
   const removeUpload = useMutation({
     mutationFn: (uploadId: string) => apiDelete(`/pool/${uploadId}`),
@@ -131,35 +120,6 @@ export default function UploadPool() {
     return counts;
   }, [conversations]);
 
-  useEffect(() => {
-    const status = clusterStatus.data?.status;
-    if (!clusterJobId || clusterFinalized || !status) return;
-
-    if (status === "complete") {
-      const count = clusterStatus.data.result?.projects?.length ?? 0;
-      setClusterFinalized(true);
-      toast.success(`Created ${count} project${count === 1 ? "" : "s"}`);
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      queryClient.invalidateQueries({ queryKey: ["pool"] });
-    }
-
-    if (status === "failed") {
-      setClusterFinalized(true);
-      toast.error(clusterStatus.data.error_message || "Grouping failed");
-    }
-  }, [clusterFinalized, clusterJobId, clusterStatus.data, queryClient]);
-
-  const resetClusterJob = () => {
-    setClusterJobId(null);
-    setClusterFinalized(false);
-  };
-
-  const clusterJobActive =
-    !!clusterJobId &&
-    !clusterFinalized &&
-    clusterStatus.data?.status !== "complete" &&
-    clusterStatus.data?.status !== "failed";
-
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-[13px] text-[#6B6B66]">
@@ -189,14 +149,7 @@ export default function UploadPool() {
                   Upload more
                 </Button>
               </Link>
-              <Button
-                variant="outline"
-                onClick={() => setClusterOpen(true)}
-                disabled={counts.unassigned === 0}
-              >
-                <Sparkles className="mr-2 h-4 w-4" />
-                AI group conversations
-              </Button>
+              <AiGroupConversationsAction unassignedCount={counts.unassigned} />
               <Button variant="ghost" onClick={() => setClearUnassignedOpen(true)} disabled={counts.unassigned === 0}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete unassigned
@@ -304,109 +257,6 @@ export default function UploadPool() {
         </div>
       </div>
 
-      <Dialog
-        open={clusterOpen}
-        onOpenChange={(open) => {
-          setClusterOpen(open);
-          if (!open && !clusterJobActive) resetClusterJob();
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>AI group conversations</DialogTitle>
-            <DialogDescription>
-              Ask the AI grouping service to organize unassigned conversations into suggested projects. Confirmed work is untouched.
-            </DialogDescription>
-          </DialogHeader>
-          {estimate.data ? (
-            <div className="rounded-md border border-[#D8D2C4] bg-[#FBF8F1] p-3 text-[13px] text-[#5C5C5C]">
-              <div className="text-[11px] uppercase tracking-[0.12em] text-[#6B6B66]">Estimate</div>
-              <div className="mt-1">
-                {estimate.data.conversation_count ?? 0} unassigned conversation{estimate.data.conversation_count === 1 ? "" : "s"} ready for grouping
-              </div>
-            </div>
-          ) : null}
-          {clusterJobId ? (
-            <div className={`rounded-md border p-3 text-[13px] ${
-              clusterStatus.data?.status === "failed"
-                ? "border-[#E8B8B8] bg-[#FBEAEA] text-[#8B2F2F]"
-                : clusterStatus.data?.status === "complete"
-                  ? "border-[#BFD8C5] bg-[#EFF8F1] text-[#1F6A3F]"
-                  : "border-[#D8D2C4] bg-[#FBF8F1] text-[#5C5C5C]"
-            }`}>
-              <div className="flex items-center gap-2">
-                {clusterJobActive ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                <span className="font-medium">
-                  {clusterStatus.data?.status === "complete"
-                    ? "AI group conversations complete"
-                    : clusterStatus.data?.status === "failed"
-                      ? "AI group conversations failed"
-                      : clusterStatus.data?.status === "running"
-                        ? "AI is grouping conversations"
-                        : "AI group conversations queued"}
-                </span>
-              </div>
-              {clusterStatus.data?.status === "complete" ? (
-                <div className="mt-1 text-[12px]">
-                  {clusterStatus.data.result?.projects?.length ?? 0} project{(clusterStatus.data.result?.projects?.length ?? 0) === 1 ? "" : "s"} created,
-                  {" "}{clusterStatus.data.result?.unclustered_count ?? 0} left unclustered.
-                </div>
-              ) : null}
-              {clusterStatus.data?.status === "failed" ? (
-                <div className="mt-1 text-[12px]">
-                  {clusterStatus.data.error_message || "AI group conversations failed."}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-          {aiCluster.isPending && !clusterJobId ? (
-            <div className="rounded-md border border-[#D8D2C4] bg-[#FBF8F1] p-3 text-[13px] text-[#5C5C5C]">
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-[#315D8A]" />
-                <span className="font-medium">Calling AI group conversations API...</span>
-              </div>
-              <div className="mt-1 text-[12px]">Waiting for the backend to accept the job.</div>
-            </div>
-          ) : null}
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setClusterOpen(false)} disabled={clusterJobActive}>
-              {clusterStatus.data?.status === "complete" || clusterStatus.data?.status === "failed" ? "Close" : "Cancel"}
-            </Button>
-            <Button
-              disabled={aiCluster.isPending || clusterJobActive}
-              onClick={() => {
-                toast.info("Calling AI group conversations API...");
-                aiCluster.mutate(undefined, {
-                  onSuccess: (result: any) => {
-                    if (!result?.job_id) {
-                      toast.error("AI group conversations did not return a job id");
-                      return;
-                    }
-                    setClusterFinalized(false);
-                    setClusterJobId(result.job_id);
-                    toast.success("AI group conversations job queued");
-                  },
-                  onError: (error: any) => {
-                    if (error instanceof ApiError && error.status === 402) {
-                      setPaymentOpen(true);
-                      return;
-                    }
-                    toast.error(error?.message ?? "AI group conversations failed");
-                  },
-                });
-              }}
-            >
-              {aiCluster.isPending || clusterJobActive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-              {aiCluster.isPending
-                ? "Calling API..."
-                : clusterJobActive
-                  ? "AI thinking..."
-                  : "AI group conversations"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={clearUnassignedOpen} onOpenChange={setClearUnassignedOpen}>
         <DialogContent>
           <DialogHeader>
@@ -460,14 +310,6 @@ export default function UploadPool() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <PaymentModal
-        open={paymentOpen}
-        onOpenChange={setPaymentOpen}
-        onComplete={() => {
-          queryClient.invalidateQueries({ queryKey: ["projects"] });
-          queryClient.invalidateQueries({ queryKey: ["pool"] });
-        }}
-      />
     </div>
   );
 }

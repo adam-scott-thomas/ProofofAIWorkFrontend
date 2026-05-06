@@ -12,6 +12,7 @@ import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
+import { AiGroupConversationsAction } from "../components/AiGroupConversationsAction";
 import {
   Select,
   SelectContent,
@@ -97,17 +98,23 @@ export default function Conversations() {
   }, [projects]);
 
   const assignedCount = conversations.filter((conversation) => conversation.project_id).length;
+  const unassignedCount = conversations.length - assignedCount;
 
   return (
     <div className="min-h-screen bg-[#F7F4ED] text-[#161616]">
       <header className="border-b border-[#D8D2C4] bg-[#FBF8F1]">
         <div className="px-8 py-7">
-          <div className="text-[12px] uppercase tracking-[0.16em] text-[#6B6B66]">Conversations</div>
-          <h1 className="mt-2 text-3xl tracking-tight">Every parsed transcript.</h1>
-          <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-[#5C5C5C]">
-            Indexed after parse. Open any row to read turns, tag specific moments, or verify what the evaluator
-            saw. Assigned conversations live in their project; unassigned ones are still in the pool.
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="text-[12px] uppercase tracking-[0.16em] text-[#6B6B66]">Conversations</div>
+              <h1 className="mt-2 text-3xl tracking-tight">Every parsed transcript.</h1>
+              <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-[#5C5C5C]">
+                Indexed after parse. Open any row to read turns, tag specific moments, or verify what the evaluator
+                saw. Assigned conversations live in their project; unassigned ones are still in the pool.
+              </p>
+            </div>
+            <AiGroupConversationsAction unassignedCount={unassignedCount} />
+          </div>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Tile label="Indexed" value={total} />
             <Tile label="On this page" value={conversations.length} />
