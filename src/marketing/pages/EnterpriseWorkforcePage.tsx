@@ -1,6 +1,7 @@
 import { ArrowRight, Network, Repeat2, Users } from "lucide-react";
 import { Link } from "react-router";
 import { Section } from "../components/Section";
+import { roleLeveragePages } from "../data/seoExpansion";
 import { capabilities, roleFamilies } from "../data/taxonomy";
 import { useSeo } from "../hooks/useSeo";
 import { APP_URL, siteMetadata } from "../lib/constants";
@@ -90,6 +91,17 @@ export default function EnterpriseWorkforcePage() {
               <h3>{family.name}</h3>
               <p>{family.roles.join(", ")}.</p>
             </article>
+          ))}
+        </div>
+      </Section>
+
+      <Section eyebrow="Role leverage" title="First profession-specific maps">
+        <div className="three-column">
+          {roleLeveragePages.map((page) => (
+            <Link className="feature-panel" to={`/ai-leverage/${page.slug}`} key={page.slug}>
+              <h3>{page.role}</h3>
+              <p>{page.promise}</p>
+            </Link>
           ))}
         </div>
       </Section>

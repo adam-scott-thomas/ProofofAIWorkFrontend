@@ -1812,6 +1812,10 @@ p {
   text-transform: uppercase;
 }
 
+.glossary-comparison-links {
+  margin-top: 1px;
+}
+
 .printer-tray {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

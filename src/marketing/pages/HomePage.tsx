@@ -2,6 +2,7 @@ import { Archive, ArrowRight, BriefcaseBusiness, FileSearch, ShieldCheck } from 
 import { Link } from "react-router";
 import ProofCard from "../components/ProofCard";
 import { Section } from "../components/Section";
+import { comparisonPages, roleLeveragePages } from "../data/seoExpansion";
 import { specimenDossiers, specimenProofs, totalsFor } from "../data/specimens";
 import { useSeo } from "../hooks/useSeo";
 import { APP_URL } from "../lib/constants";
@@ -78,6 +79,42 @@ export default function HomePage() {
           <Link className="text-link" to="/employers">
             See employer review patterns <ArrowRight size={18} />
           </Link>
+        </div>
+      </Section>
+
+      <Section
+        eyebrow="Role leverage"
+        title="AI capability by profession"
+        lead="The first role pages stay close to observable work: product decisions, recruiting review, and marketing systems."
+      >
+        <div className="three-column">
+          {roleLeveragePages.map((page) => (
+            <Link className="feature-panel" to={`/ai-leverage/${page.slug}`} key={page.slug}>
+              <h3>{page.role}</h3>
+              <p>{page.description}</p>
+              <span className="text-link">
+                Read role page <ArrowRight size={18} />
+              </span>
+            </Link>
+          ))}
+        </div>
+      </Section>
+
+      <Section
+        eyebrow="Category comparisons"
+        title="Clarify the evaluation surface"
+        lead="Comparison pages explain when traditional signals help and where proof artifacts give reviewers better evidence."
+      >
+        <div className="two-column">
+          {comparisonPages.map((page) => (
+            <Link className="feature-panel" to={`/compare/${page.slug}`} key={page.slug}>
+              <h3>{page.title}</h3>
+              <p>{page.description}</p>
+              <span className="text-link">
+                Open comparison <ArrowRight size={18} />
+              </span>
+            </Link>
+          ))}
         </div>
       </Section>
 

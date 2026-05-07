@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router";
 import { Section } from "../components/Section";
+import { comparisonPages, roleLeveragePages } from "../data/seoExpansion";
 import { glossaryConceptInventory, glossarySeedConcepts } from "../data/taxonomy";
 import { useSeo } from "../hooks/useSeo";
 import { siteMetadata } from "../lib/constants";
@@ -67,6 +68,25 @@ export default function GlossaryPage() {
               <span>Concept</span>
               <h3>{concept.term}</h3>
             </article>
+          ))}
+        </div>
+      </Section>
+
+      <Section eyebrow="Applied pages" title="Where these concepts are used">
+        <div className="three-column">
+          {roleLeveragePages.map((page) => (
+            <Link className="feature-panel" to={`/ai-leverage/${page.slug}`} key={page.slug}>
+              <h3>{page.role}</h3>
+              <p>{page.description}</p>
+            </Link>
+          ))}
+        </div>
+        <div className="two-column glossary-comparison-links">
+          {comparisonPages.map((page) => (
+            <Link className="feature-panel" to={`/compare/${page.slug}`} key={page.slug}>
+              <h3>{page.title}</h3>
+              <p>{page.description}</p>
+            </Link>
           ))}
         </div>
       </Section>

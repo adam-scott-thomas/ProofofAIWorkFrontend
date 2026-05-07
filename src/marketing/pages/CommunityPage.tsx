@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import ProofCard from "../components/ProofCard";
 import { identityClusters } from "../data/clusters";
+import { roleLeveragePages } from "../data/seoExpansion";
 import { archetypes } from "../data/taxonomy";
 import { useSeo } from "../hooks/useSeo";
 import { APP_URL, siteMetadata } from "../lib/constants";
@@ -70,6 +71,15 @@ export default function CommunityPage() {
           <Link to={`/archetypes/${archetype.slug}`} key={archetype.slug}>
             <strong>{archetype.name}</strong>
             <span>{archetype.meaning}</span>
+          </Link>
+        ))}
+      </div>
+
+      <div className="cluster-rail" aria-label="Role leverage discovery">
+        {roleLeveragePages.map((page) => (
+          <Link to={`/ai-leverage/${page.slug}`} key={page.slug}>
+            <strong>{page.role}</strong>
+            <span>{page.promise}</span>
           </Link>
         ))}
       </div>

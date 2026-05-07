@@ -1,5 +1,6 @@
 import { BLOG_POSTS } from "../src/app/content/blog";
 import { QUIZ_RESULTS } from "../src/app/content/quiz";
+import { comparisonPages, roleLeveragePages } from "../src/marketing/data/seoExpansion";
 import { archetypes, glossarySeedConcepts } from "../src/marketing/data/taxonomy";
 import { API_BASE, SITE_BASE } from "./_lib/meta";
 
@@ -47,6 +48,8 @@ export const onRequestGet: PagesFunction = async () => {
     ...staticUrls.map((path) => xmlUrl(`${SITE_BASE}${path}`)),
     ...archetypes.map((archetype) => xmlUrl(`${SITE_BASE}/archetypes/${archetype.slug}`)),
     ...glossarySeedConcepts.map((concept) => xmlUrl(`${SITE_BASE}/glossary/${concept.slug}`)),
+    ...roleLeveragePages.map((page) => xmlUrl(`${SITE_BASE}/ai-leverage/${page.slug}`)),
+    ...comparisonPages.map((page) => xmlUrl(`${SITE_BASE}/compare/${page.slug}`)),
     ...BLOG_POSTS.map((post) => xmlUrl(`${SITE_BASE}/blog/${post.slug}`, post.publishedAt)),
     ...QUIZ_RESULTS.map((result) => xmlUrl(`${SITE_BASE}/quiz/${result.slug}`)),
     ...index.proof_pages.map((page) => xmlUrl(`${SITE_BASE}${page.url}`, page.updated_at || page.published_at)),

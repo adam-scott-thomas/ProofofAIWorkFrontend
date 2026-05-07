@@ -5,6 +5,7 @@ import ArchetypePage from "../marketing/pages/ArchetypePage";
 import ArchetypesPage from "../marketing/pages/ArchetypesPage";
 import BlogIndexPage from "../marketing/pages/BlogIndexPage";
 import BlogPostPage from "../marketing/pages/BlogPostPage";
+import ComparisonPage from "../marketing/pages/ComparisonPage";
 import CommunityPage from "../marketing/pages/CommunityPage";
 import DemoCardsPage from "../marketing/pages/DemoCardsPage";
 import DemoDossiersPage from "../marketing/pages/DemoDossiersPage";
@@ -24,7 +25,9 @@ import NotFoundPage from "../marketing/pages/NotFoundPage";
 import ProofPage from "../marketing/pages/ProofPage";
 import QuizPage from "../marketing/pages/QuizPage";
 import QuizzesPage from "../marketing/pages/QuizzesPage";
+import RoleLeveragePage from "../marketing/pages/RoleLeveragePage";
 import ScoresPage from "../marketing/pages/ScoresPage";
+import YourAiResumePage from "../marketing/pages/YourAiResumePage";
 
 export const router = createBrowserRouter([
   {
@@ -41,6 +44,8 @@ export const router = createBrowserRouter([
       { path: "archetypes/:slug", element: <ArchetypePage /> },
       { path: "glossary", element: <GlossaryPage /> },
       { path: "glossary/:slug", element: <GlossaryTermPage /> },
+      { path: "ai-leverage/:slug", element: <RoleLeveragePage /> },
+      { path: "compare/:slug", element: <ComparisonPage /> },
       { path: "enterprise/hiring-ai-capable-talent", element: <EnterpriseHiringPage /> },
       { path: "enterprise/workforce-amplification", element: <EnterpriseWorkforcePage /> },
       { path: "community", element: <CommunityPage /> },
@@ -52,6 +57,9 @@ export const router = createBrowserRouter([
       { path: "proof/:slug", element: <ProofPage /> },
       { path: "scores", element: <ScoresPage /> },
       { path: "examples", element: <ExamplesPage /> },
+      { path: "resume-is-dead", element: <YourAiResumePage /> },
+      { path: "your-ai-resume", element: <YourAiResumePage /> },
+      { path: "your-ai-resume/:slug", element: <YourAiResumePage /> },
       { path: "employers", element: <EmployersPage /> },
       { path: "job-seekers", element: <JobSeekersPage /> },
       { path: "about", element: <AboutPage /> },

@@ -21,6 +21,8 @@ const navGroups = [
       { href: "/glossary", label: "Glossary", note: "Shared vocabulary" },
       { href: "/glossary/ai-work-sample", label: "AI Work Samples", note: "Inspectable work" },
       { href: "/glossary/ai-leverage", label: "AI Leverage", note: "Capability lift" },
+      { href: "/ai-leverage/product-managers", label: "AI for Product Managers", note: "Role leverage" },
+      { href: "/ai-leverage/recruiters", label: "AI for Recruiters", note: "Talent workflows" },
       { href: "/blog", label: "Blog", note: "Field notes" },
     ],
   },
@@ -30,6 +32,7 @@ const navGroups = [
       { href: "/employers", label: "Employers", note: "Review real work" },
       { href: "/enterprise/workforce-amplification", label: "Workforce Amplification", note: "Team capability" },
       { href: "/enterprise/hiring-ai-capable-talent", label: "Hiring AI-Capable Talent", note: "Evidence-based hiring" },
+      { href: "/compare/resume-screening-vs-proof-of-work", label: "Resumes vs Proof", note: "Category comparison" },
       { href: "/job-seekers", label: "Job Seekers", note: "Publish proof" },
     ],
   },
@@ -123,6 +126,11 @@ export default function SiteLayout() {
           <Link to="/glossary">Glossary</Link>
           <Link to="/enterprise/hiring-ai-capable-talent">Hiring evaluation</Link>
           <Link to="/enterprise/workforce-amplification">Workforce amplification</Link>
+          <Link to="/ai-leverage/product-managers">AI leverage for PMs</Link>
+          <Link to="/ai-leverage/recruiters">AI leverage for recruiters</Link>
+          <Link to="/ai-leverage/marketers">AI leverage for marketers</Link>
+          <Link to="/compare/ai-skills-assessments-vs-work-samples">Assessments vs work samples</Link>
+          <Link to="/compare/resume-screening-vs-proof-of-work">Resumes vs proof</Link>
           <Link to="/community">Community</Link>
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>

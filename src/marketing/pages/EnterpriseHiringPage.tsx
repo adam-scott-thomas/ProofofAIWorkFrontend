@@ -1,6 +1,7 @@
 import { ArrowRight, FileSearch, Scale, ShieldCheck } from "lucide-react";
 import { Link } from "react-router";
 import { Section } from "../components/Section";
+import { comparisonPages, roleLeveragePages } from "../data/seoExpansion";
 import { archetypes, proofArtifactTypes } from "../data/taxonomy";
 import { useSeo } from "../hooks/useSeo";
 import { APP_URL, siteMetadata } from "../lib/constants";
@@ -103,6 +104,28 @@ export default function EnterpriseHiringPage() {
               <span>{archetype.enterpriseInterpretation}</span>
               <h3>{archetype.name}</h3>
               <p>{archetype.meaning}</p>
+            </Link>
+          ))}
+        </div>
+      </Section>
+
+      <Section eyebrow="Role pages" title="Start evaluation with role-specific work">
+        <div className="three-column">
+          {roleLeveragePages.map((page) => (
+            <Link className="feature-panel" to={`/ai-leverage/${page.slug}`} key={page.slug}>
+              <h3>{page.role}</h3>
+              <p>{page.enterpriseUse}</p>
+            </Link>
+          ))}
+        </div>
+      </Section>
+
+      <Section eyebrow="Comparisons" title="Explain the shift from claims to evidence">
+        <div className="two-column">
+          {comparisonPages.map((page) => (
+            <Link className="feature-panel" to={`/compare/${page.slug}`} key={page.slug}>
+              <h3>{page.title}</h3>
+              <p>{page.framing}</p>
             </Link>
           ))}
         </div>

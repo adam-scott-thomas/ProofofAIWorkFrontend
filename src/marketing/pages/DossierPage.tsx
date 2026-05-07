@@ -9,6 +9,7 @@ import {
 } from "../components/EditorialPrimitives";
 import ProofCard from "../components/ProofCard";
 import { identityClusters } from "../data/clusters";
+import { roleLeveragePages } from "../data/seoExpansion";
 import { archetypes, glossarySeedConcepts } from "../data/taxonomy";
 import { useSeo } from "../hooks/useSeo";
 import { APP_URL, siteMetadata } from "../lib/constants";
@@ -205,6 +206,12 @@ export default function DossierPage() {
                 <div key={concept.slug}>
                   <Link to={`/glossary/${concept.slug}`}>{concept.term}</Link>
                   <p>{concept.definition}</p>
+                </div>
+              ))}
+              {roleLeveragePages.slice(0, 2).map((page) => (
+                <div key={page.slug}>
+                  <Link to={`/ai-leverage/${page.slug}`}>{page.role}</Link>
+                  <p>{page.description}</p>
                 </div>
               ))}
             </div>
