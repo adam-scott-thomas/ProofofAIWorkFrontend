@@ -32,8 +32,13 @@ export default function HomePage() {
     <>
       <section className="home-demo-hero">
         <div className="hero-copy">
-          <p className="eyebrow">ProofOfAIWork</p>
-          <h1>Don&apos;t just say you&apos;re AI-capable. Proof it.</h1>
+          <p className="eyebrow">PROOFOFAIWORK</p>
+          <h1 className="home-hero-title">
+            <span>Don&apos;t just say</span>
+            <span>you&apos;re AI-</span>
+            <span>capable.</span>
+            <span>Proof it.</span>
+          </h1>
           <p className="hero-subhead">
             Turn real AI-assisted work into verified proof artifacts employers, clients, and teams can actually inspect.
           </p>

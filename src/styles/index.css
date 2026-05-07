@@ -1849,14 +1849,50 @@ p {
 
 .home-demo-hero {
   display: grid;
-  grid-template-columns: minmax(0, 0.72fr) minmax(22rem, 1fr);
-  gap: clamp(2rem, 5vw, 4rem);
+  grid-template-columns: minmax(0, 0.86fr) minmax(26rem, 0.92fr);
+  gap: clamp(2rem, 6vw, 5rem);
   align-items: center;
   min-height: calc(100svh - 5rem);
-  padding: clamp(3rem, 7vw, 6rem) clamp(1rem, 5vw, 5rem);
+  overflow: hidden;
+  padding: clamp(4rem, 8vw, 7rem) clamp(1rem, 6vw, 6rem);
+  background:
+    linear-gradient(90deg, rgba(255, 253, 247, 0.96), rgba(246, 239, 222, 0.7)),
+    var(--poaw-paper);
 }
 
-.home-proof-stack,
+.home-demo-hero .hero-copy {
+  max-width: 52rem;
+}
+
+.home-hero-title {
+  display: grid;
+  gap: 0;
+  max-width: 12ch;
+  color: var(--poaw-ink);
+  font-family: var(--poaw-serif);
+  font-size: clamp(4.5rem, 10vw, 9.6rem);
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 0.82;
+}
+
+.home-hero-title span {
+  display: block;
+}
+
+.home-demo-hero .hero-subhead {
+  max-width: 38rem;
+  margin-top: 1.5rem;
+  color: var(--poaw-muted);
+  font-size: clamp(1.05rem, 1.55vw, 1.28rem);
+  line-height: 1.45;
+}
+
+.home-demo-hero .cta-row {
+  margin-top: 1.8rem;
+}
+
 .demo-hero-cards {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1865,20 +1901,57 @@ p {
   border: 1px solid var(--poaw-rule);
 }
 
-.home-proof-stack .proof-card,
 .demo-hero-cards .proof-card {
   background: var(--poaw-paper);
 }
 
-.home-proof-stack .proof-card-stage,
 .demo-hero-cards .proof-card-stage {
   min-height: 30rem;
 }
 
-.home-proof-stack .proof-card-face,
 .demo-hero-cards .proof-card-face {
   border: 0;
   box-shadow: none;
+}
+
+.home-proof-stack {
+  position: relative;
+  min-height: min(62vw, 46rem);
+}
+
+.home-proof-stack .proof-card {
+  position: absolute;
+  width: min(28rem, 58%);
+  background: var(--poaw-paper);
+}
+
+.home-proof-stack .proof-card:nth-child(1) {
+  top: 5%;
+  right: 18%;
+  z-index: 3;
+}
+
+.home-proof-stack .proof-card:nth-child(2) {
+  top: 23%;
+  right: 0;
+  z-index: 2;
+  transform: rotate(2deg);
+}
+
+.home-proof-stack .proof-card:nth-child(3) {
+  top: 34%;
+  right: 38%;
+  z-index: 1;
+  transform: rotate(-2.5deg);
+}
+
+.home-proof-stack .proof-card-stage {
+  min-height: 31rem;
+}
+
+.home-proof-stack .proof-card-face {
+  border-color: rgba(18, 60, 54, 0.18);
+  box-shadow: 0 22px 58px rgba(40, 30, 10, 0.14);
 }
 
 .section-action {
@@ -2045,6 +2118,26 @@ p {
   .demo-index-grid,
   .home-cta-band {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .home-proof-stack {
+    position: relative;
+    display: grid;
+    min-height: auto;
+    gap: 1px;
+    background: var(--poaw-rule);
+    border: 1px solid var(--poaw-rule);
+  }
+
+  .home-proof-stack .proof-card {
+    position: static;
+    width: auto;
+    transform: none;
+  }
+
+  .home-proof-stack .proof-card-face {
+    border: 0;
+    box-shadow: none;
   }
 }
 
