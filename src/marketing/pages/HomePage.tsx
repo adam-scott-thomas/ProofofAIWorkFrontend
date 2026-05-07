@@ -35,10 +35,10 @@ export default function HomePage() {
         <div className="hero-copy">
           <p className="eyebrow">PROOFOFAIWORK</p>
           <h1 className="home-hero-title">
-            <span>Don&apos;t just say</span>
-            <span>you&apos;re AI-</span>
-            <span>capable.</span>
-            <span>Proof it.</span>
+            <span className="home-hero-setup">Don&apos;t just say</span>
+            <span className="home-hero-setup">you&apos;re AI-</span>
+            <span className="home-hero-setup">capable.</span>
+            <span className="home-hero-punch">Proof it.</span>
           </h1>
           <p className="hero-subhead">
             Turn real AI-assisted work into verified proof artifacts employers, clients, and teams can actually inspect.
@@ -55,9 +55,11 @@ export default function HomePage() {
           </div>
         </div>
         <div className="home-proof-stack" aria-label="Specimen proof card examples">
-          {specimenProofs.slice(0, 3).map((proof) => (
-            <ProofCard receipt={proof} compact key={proof.slug} />
-          ))}
+          <div className="home-proof-cluster">
+            {specimenProofs.slice(0, 3).map((proof) => (
+              <ProofCard receipt={proof} compact key={proof.slug} />
+            ))}
+          </div>
         </div>
       </section>
 
