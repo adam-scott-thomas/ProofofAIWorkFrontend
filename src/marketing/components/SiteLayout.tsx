@@ -1,17 +1,47 @@
-import { Menu, X } from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router";
 import { APP_URL, PRIMARY_CTA } from "../lib/constants";
 
-const navItems = [
-  { href: "/scores", label: "Scores" },
-  { href: "/examples", label: "Examples" },
-  { href: "/demo", label: "Demo" },
-  { href: "/archetypes", label: "Archetypes" },
-  { href: "/glossary", label: "Glossary" },
-  { href: "/employers", label: "Employers" },
-  { href: "/community", label: "Community" },
-  { href: "/quizzes", label: "Quizzes" },
+const navGroups = [
+  {
+    label: "Explore",
+    items: [
+      { href: "/community", label: "Community", note: "Public evidence archive" },
+      { href: "/examples", label: "Examples", note: "Specimen surfaces" },
+      { href: "/demo/proofs", label: "Proof Gallery", note: "Full proof specimens" },
+      { href: "/demo/dossiers", label: "Dossiers", note: "Capability archives" },
+      { href: "/archetypes", label: "Archetypes", note: "Operator patterns" },
+    ],
+  },
+  {
+    label: "Learn",
+    items: [
+      { href: "/scores", label: "Scores", note: "Signal definitions" },
+      { href: "/glossary", label: "Glossary", note: "Shared vocabulary" },
+      { href: "/glossary/ai-work-sample", label: "AI Work Samples", note: "Inspectable work" },
+      { href: "/glossary/ai-leverage", label: "AI Leverage", note: "Capability lift" },
+      { href: "/blog", label: "Blog", note: "Field notes" },
+    ],
+  },
+  {
+    label: "Solutions",
+    items: [
+      { href: "/employers", label: "Employers", note: "Review real work" },
+      { href: "/enterprise/workforce-amplification", label: "Workforce Amplification", note: "Team capability" },
+      { href: "/enterprise/hiring-ai-capable-talent", label: "Hiring AI-Capable Talent", note: "Evidence-based hiring" },
+      { href: "/job-seekers", label: "Job Seekers", note: "Publish proof" },
+    ],
+  },
+  {
+    label: "Assess",
+    items: [
+      { href: "/quizzes", label: "Quizzes", note: "Directional checks" },
+      { href: "/quizzes/ai-work-style", label: "AI Workstyle", note: "Work pattern quiz" },
+      { href: "/quizzes/ai-native-score", label: "AI Readiness", note: "Maturity signal" },
+      { href: "/quizzes/ai-native-score", label: "Capability Diagnostic", note: "Start assessment" },
+    ],
+  },
 ];
 
 export default function SiteLayout() {
@@ -25,10 +55,22 @@ export default function SiteLayout() {
           <span>ProofOfAIWork</span>
         </Link>
         <nav className="desktop-nav" aria-label="Primary navigation">
-          {navItems.map((item) => (
-            <NavLink key={item.href} to={item.href}>
-              {item.label}
-            </NavLink>
+          {navGroups.map((group) => (
+            <div className="nav-group" key={group.label}>
+              <button className="nav-group-trigger" type="button" aria-haspopup="true">
+                {group.label}
+                <ChevronDown size={14} aria-hidden="true" />
+              </button>
+              <div className="nav-panel">
+                <span>{group.label}</span>
+                {group.items.map((item) => (
+                  <NavLink key={`${group.label}-${item.label}`} to={item.href}>
+                    <strong>{item.label}</strong>
+                    <small>{item.note}</small>
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
         <a className="nav-cta" href={APP_URL}>
@@ -47,12 +89,17 @@ export default function SiteLayout() {
 
       {open ? (
         <nav className="mobile-nav" aria-label="Mobile navigation">
-          {navItems.map((item) => (
-            <NavLink key={item.href} to={item.href} onClick={() => setOpen(false)}>
-              {item.label}
-            </NavLink>
+          {navGroups.map((group) => (
+            <section className="mobile-nav-group" key={group.label}>
+              <p>{group.label}</p>
+              {group.items.map((item) => (
+                <NavLink key={`${group.label}-${item.label}`} to={item.href} onClick={() => setOpen(false)}>
+                  {item.label}
+                </NavLink>
+              ))}
+            </section>
           ))}
-          <a href={APP_URL} onClick={() => setOpen(false)}>
+          <a className="mobile-nav-cta" href={APP_URL} onClick={() => setOpen(false)}>
             {PRIMARY_CTA}
           </a>
         </nav>
