@@ -1,12 +1,18 @@
 import { createBrowserRouter, Navigate } from "react-router";
 import SiteLayout from "../marketing/components/SiteLayout";
 import AboutPage from "../marketing/pages/AboutPage";
+import ArchetypePage from "../marketing/pages/ArchetypePage";
+import ArchetypesPage from "../marketing/pages/ArchetypesPage";
 import BlogIndexPage from "../marketing/pages/BlogIndexPage";
 import BlogPostPage from "../marketing/pages/BlogPostPage";
 import CommunityPage from "../marketing/pages/CommunityPage";
 import DossierPage from "../marketing/pages/DossierPage";
 import EmployersPage from "../marketing/pages/EmployersPage";
+import EnterpriseHiringPage from "../marketing/pages/EnterpriseHiringPage";
+import EnterpriseWorkforcePage from "../marketing/pages/EnterpriseWorkforcePage";
 import ExamplesPage from "../marketing/pages/ExamplesPage";
+import GlossaryPage from "../marketing/pages/GlossaryPage";
+import GlossaryTermPage from "../marketing/pages/GlossaryTermPage";
 import HomePage from "../marketing/pages/HomePage";
 import JobSeekersPage from "../marketing/pages/JobSeekersPage";
 import LegalPage from "../marketing/pages/LegalPage";
@@ -27,6 +33,12 @@ export const router = createBrowserRouter([
       { path: "quizzes/ai-work-style", element: <QuizPage quizSlug="ai-work-style" /> },
       { path: "blog", element: <BlogIndexPage /> },
       { path: "blog/:slug", element: <BlogPostPage /> },
+      { path: "archetypes", element: <ArchetypesPage /> },
+      { path: "archetypes/:slug", element: <ArchetypePage /> },
+      { path: "glossary", element: <GlossaryPage /> },
+      { path: "glossary/:slug", element: <GlossaryTermPage /> },
+      { path: "enterprise/hiring-ai-capable-talent", element: <EnterpriseHiringPage /> },
+      { path: "enterprise/workforce-amplification", element: <EnterpriseWorkforcePage /> },
       { path: "community", element: <CommunityPage /> },
       { path: "dossier/:handle", element: <DossierPage /> },
       { path: "proof/:slug", element: <ProofPage /> },

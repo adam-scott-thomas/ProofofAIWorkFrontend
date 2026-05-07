@@ -1626,9 +1626,12 @@ p {
 }
 
 .cluster-rail div,
+.cluster-rail a,
 .cluster-list div {
   border-left: 1px solid var(--poaw-rule);
+  color: inherit;
   padding-left: 0.8rem;
+  text-decoration: none;
 }
 
 .cluster-rail strong,
@@ -1647,6 +1650,14 @@ p {
   font-size: 0.88rem;
   font-style: italic;
   line-height: 1.45;
+}
+
+.cluster-list a {
+  color: var(--poaw-green);
+  font-family: var(--poaw-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .printer-tray {

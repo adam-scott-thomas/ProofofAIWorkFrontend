@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { ArtifactGrid, EditorialSection, LedgerPanel, VerificationBlock } from "../components/EditorialPrimitives";
 import ProofCard from "../components/ProofCard";
+import { archetypes, glossarySeedConcepts } from "../data/taxonomy";
 import { useSeo } from "../hooks/useSeo";
 import { APP_URL, siteMetadata } from "../lib/constants";
 import { fetchPublicReceipt, type PublicReceipt } from "../lib/publicReceipts";
@@ -287,6 +288,25 @@ export default function ProofPage() {
               <ArtifactGrid artifacts={receipt.artifact_cards} />
             </section>
           ) : null}
+
+          <section className="side-section">
+            <p className="eyebrow">Taxonomy</p>
+            <h2>Interpret the proof</h2>
+            <div className="cluster-list">
+              {archetypes.slice(0, 3).map((archetype) => (
+                <div key={archetype.slug}>
+                  <Link to={`/archetypes/${archetype.slug}`}>{archetype.name}</Link>
+                  <p>{archetype.meaning}</p>
+                </div>
+              ))}
+              {glossarySeedConcepts.slice(0, 2).map((concept) => (
+                <div key={concept.slug}>
+                  <Link to={`/glossary/${concept.slug}`}>{concept.term}</Link>
+                  <p>{concept.definition}</p>
+                </div>
+              ))}
+            </div>
+          </section>
         </aside>
       </section>
 

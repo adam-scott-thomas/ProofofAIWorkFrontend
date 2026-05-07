@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import ProofCard from "../components/ProofCard";
 import { identityClusters } from "../data/clusters";
+import { archetypes } from "../data/taxonomy";
 import { useSeo } from "../hooks/useSeo";
 import { APP_URL, siteMetadata } from "../lib/constants";
 import { fetchPublicReceipts, type PublicReceiptListItem } from "../lib/publicReceipts";
@@ -61,6 +62,15 @@ export default function CommunityPage() {
             <strong>{cluster.name}</strong>
             <span>{cluster.description}</span>
           </div>
+        ))}
+      </div>
+
+      <div className="cluster-rail" aria-label="Taxonomy discovery">
+        {archetypes.slice(0, 4).map((archetype) => (
+          <Link to={`/archetypes/${archetype.slug}`} key={archetype.slug}>
+            <strong>{archetype.name}</strong>
+            <span>{archetype.meaning}</span>
+          </Link>
         ))}
       </div>
 

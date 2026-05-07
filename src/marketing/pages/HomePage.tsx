@@ -148,6 +148,36 @@ export default function HomePage() {
       </Section>
 
       <Section
+        eyebrow="Taxonomy v1"
+        title="A shared language for AI work proof"
+        lead="Archetypes, glossary concepts, and enterprise pages now connect the public proof layer to hiring and workforce evaluation."
+      >
+        <div className="three-column">
+          <Link className="feature-panel" to="/archetypes">
+            <h3>Archetypes</h3>
+            <p>Nine practical workstyle patterns for describing how people create AI leverage.</p>
+            <span className="text-link">
+              Open taxonomy <ArrowRight size={18} />
+            </span>
+          </Link>
+          <Link className="feature-panel" to="/glossary">
+            <h3>Glossary</h3>
+            <p>Plain-English terms for AI work samples, proof artifacts, and AI-assisted workflows.</p>
+            <span className="text-link">
+              Read glossary <ArrowRight size={18} />
+            </span>
+          </Link>
+          <Link className="feature-panel" to="/enterprise/hiring-ai-capable-talent">
+            <h3>Hiring evaluation</h3>
+            <p>Evidence-based review language for demonstrated AI capability.</p>
+            <span className="text-link">
+              View enterprise page <ArrowRight size={18} />
+            </span>
+          </Link>
+        </div>
+      </Section>
+
+      <Section
         eyebrow="Public proof layer"
         title="Canonical proof pages live on proofofaiwork.com"
         lead="When users publish receipts, the public record resolves at /proof/:slug with only public-safe score and evidence fields."

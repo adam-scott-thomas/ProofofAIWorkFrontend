@@ -9,6 +9,7 @@ import {
 } from "../components/EditorialPrimitives";
 import ProofCard from "../components/ProofCard";
 import { identityClusters } from "../data/clusters";
+import { archetypes, glossarySeedConcepts } from "../data/taxonomy";
 import { useSeo } from "../hooks/useSeo";
 import { APP_URL, siteMetadata } from "../lib/constants";
 import { fetchPublicDossier, type PublicDossier } from "../lib/publicReceipts";
@@ -185,6 +186,25 @@ export default function DossierPage() {
                 <div key={cluster.name}>
                   <strong>{cluster.name}</strong>
                   <p>{cluster.description}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="side-section">
+            <p className="eyebrow">Taxonomy links</p>
+            <h2>Workstyle context</h2>
+            <div className="cluster-list">
+              {archetypes.slice(0, 3).map((archetype) => (
+                <div key={archetype.slug}>
+                  <Link to={`/archetypes/${archetype.slug}`}>{archetype.name}</Link>
+                  <p>{archetype.meaning}</p>
+                </div>
+              ))}
+              {glossarySeedConcepts.slice(0, 2).map((concept) => (
+                <div key={concept.slug}>
+                  <Link to={`/glossary/${concept.slug}`}>{concept.term}</Link>
+                  <p>{concept.definition}</p>
                 </div>
               ))}
             </div>

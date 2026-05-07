@@ -6,11 +6,11 @@ import { APP_URL, PRIMARY_CTA } from "../lib/constants";
 const navItems = [
   { href: "/scores", label: "Scores" },
   { href: "/examples", label: "Examples" },
+  { href: "/archetypes", label: "Archetypes" },
+  { href: "/glossary", label: "Glossary" },
   { href: "/employers", label: "Employers" },
-  { href: "/job-seekers", label: "Job seekers" },
   { href: "/community", label: "Community" },
   { href: "/quizzes", label: "Quizzes" },
-  { href: "/blog", label: "Blog" },
 ];
 
 export default function SiteLayout() {
@@ -71,6 +71,10 @@ export default function SiteLayout() {
         </div>
         <nav aria-label="Footer navigation">
           <Link to="/about">About</Link>
+          <Link to="/archetypes">Archetypes</Link>
+          <Link to="/glossary">Glossary</Link>
+          <Link to="/enterprise/hiring-ai-capable-talent">Hiring evaluation</Link>
+          <Link to="/enterprise/workforce-amplification">Workforce amplification</Link>
           <Link to="/community">Community</Link>
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
