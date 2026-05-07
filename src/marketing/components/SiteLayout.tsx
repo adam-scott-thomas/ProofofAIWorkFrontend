@@ -6,6 +6,7 @@ import { APP_URL, PRIMARY_CTA } from "../lib/constants";
 const navItems = [
   { href: "/scores", label: "Scores" },
   { href: "/examples", label: "Examples" },
+  { href: "/demo", label: "Demo" },
   { href: "/archetypes", label: "Archetypes" },
   { href: "/glossary", label: "Glossary" },
   { href: "/employers", label: "Employers" },

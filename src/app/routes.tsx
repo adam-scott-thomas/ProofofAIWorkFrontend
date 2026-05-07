@@ -6,6 +6,10 @@ import ArchetypesPage from "../marketing/pages/ArchetypesPage";
 import BlogIndexPage from "../marketing/pages/BlogIndexPage";
 import BlogPostPage from "../marketing/pages/BlogPostPage";
 import CommunityPage from "../marketing/pages/CommunityPage";
+import DemoCardsPage from "../marketing/pages/DemoCardsPage";
+import DemoDossiersPage from "../marketing/pages/DemoDossiersPage";
+import DemoIndexPage from "../marketing/pages/DemoIndexPage";
+import DemoProofsPage from "../marketing/pages/DemoProofsPage";
 import DossierPage from "../marketing/pages/DossierPage";
 import EmployersPage from "../marketing/pages/EmployersPage";
 import EnterpriseHiringPage from "../marketing/pages/EnterpriseHiringPage";
@@ -40,6 +44,10 @@ export const router = createBrowserRouter([
       { path: "enterprise/hiring-ai-capable-talent", element: <EnterpriseHiringPage /> },
       { path: "enterprise/workforce-amplification", element: <EnterpriseWorkforcePage /> },
       { path: "community", element: <CommunityPage /> },
+      { path: "demo", element: <DemoIndexPage /> },
+      { path: "demo/cards", element: <DemoCardsPage /> },
+      { path: "demo/proofs", element: <DemoProofsPage /> },
+      { path: "demo/dossiers", element: <DemoDossiersPage /> },
       { path: "dossier/:handle", element: <DossierPage /> },
       { path: "proof/:slug", element: <ProofPage /> },
       { path: "scores", element: <ScoresPage /> },

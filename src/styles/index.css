@@ -1710,6 +1710,157 @@ p {
   gap: 1rem;
 }
 
+.home-demo-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(22rem, 1fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: center;
+  min-height: calc(100svh - 5rem);
+  padding: clamp(3rem, 7vw, 6rem) clamp(1rem, 5vw, 5rem);
+}
+
+.home-proof-stack,
+.demo-hero-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--poaw-rule);
+  border: 1px solid var(--poaw-rule);
+}
+
+.home-proof-stack .proof-card,
+.demo-hero-cards .proof-card {
+  background: var(--poaw-paper);
+}
+
+.home-proof-stack .proof-card-stage,
+.demo-hero-cards .proof-card-stage {
+  min-height: 30rem;
+}
+
+.home-proof-stack .proof-card-face,
+.demo-hero-cards .proof-card-face {
+  border: 0;
+  box-shadow: none;
+}
+
+.section-action {
+  margin-top: 1.5rem;
+}
+
+.home-dossier-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 0.58fr) minmax(18rem, 0.42fr);
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: start;
+  padding-top: 1rem;
+  border-top: 1px solid var(--poaw-rule);
+}
+
+.home-dossier-preview h3,
+.home-cta-band h2 {
+  font-family: var(--poaw-serif);
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.home-cta-band {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  width: min(1200px, calc(100% - 2rem));
+  margin: clamp(3rem, 8vw, 6rem) auto;
+  background: var(--poaw-rule);
+  border: 1px solid var(--poaw-rule);
+}
+
+.home-cta-band > div {
+  min-height: 26rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: var(--poaw-paper);
+}
+
+.home-cta-band p {
+  max-width: 36rem;
+}
+
+.demo-page,
+.examples-rebuilt {
+  width: min(1280px, calc(100% - 2rem));
+  margin-inline: auto;
+  padding: clamp(3rem, 8vw, 6rem) 0;
+}
+
+.demo-page .archive-masthead,
+.examples-rebuilt > p,
+.examples-rebuilt > h1 {
+  max-width: 62rem;
+}
+
+.demo-index-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: clamp(2rem, 5vw, 4rem);
+  background: var(--poaw-rule);
+  border: 1px solid var(--poaw-rule);
+}
+
+.demo-index-grid .feature-panel {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--poaw-paper);
+}
+
+.demo-card-lab,
+.specimen-proof-list,
+.specimen-dossier-list {
+  display: grid;
+  gap: clamp(2rem, 5vw, 4rem);
+  margin-top: clamp(2rem, 5vw, 4rem);
+}
+
+.demo-card-lab {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+}
+
+.demo-card-lab section {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.demo-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--poaw-rule);
+  padding-bottom: 0.55rem;
+  font-family: var(--poaw-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.demo-label span {
+  color: var(--poaw-muted);
+}
+
+.demo-label strong {
+  color: var(--poaw-green);
+  font-weight: 500;
+}
+
+.specimen-proof,
+.specimen-dossier {
+  padding: clamp(1rem, 3vw, 2rem);
+  border: 1px solid var(--poaw-rule);
+  background: color-mix(in srgb, var(--poaw-paper) 88%, white);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1737,7 +1888,9 @@ p {
 @media (max-width: 980px) {
   .proof-dossier-hero,
   .proof-dossier-body,
-  .dossier-identity {
+  .dossier-identity,
+  .home-demo-hero,
+  .home-dossier-preview {
     grid-template-columns: 1fr;
   }
 
@@ -1748,7 +1901,12 @@ p {
   }
 
   .cluster-rail,
-  .printer-tray {
+  .printer-tray,
+  .home-proof-stack,
+  .demo-hero-cards,
+  .demo-card-lab,
+  .demo-index-grid,
+  .home-cta-band {
     grid-template-columns: 1fr 1fr;
   }
 }
@@ -1764,7 +1922,12 @@ p {
 
   .artifact-grid,
   .cluster-rail,
-  .printer-tray {
+  .printer-tray,
+  .home-proof-stack,
+  .demo-hero-cards,
+  .demo-card-lab,
+  .demo-index-grid,
+  .home-cta-band {
     grid-template-columns: 1fr;
   }
 
