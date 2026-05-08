@@ -30,19 +30,23 @@ export const onRequestGet: PagesFunction = async () => {
 
   const staticUrls = [
     "/",
-    "/students",
+    "/quizzes",
+    "/quizzes/ai-native-score",
+    "/quizzes/ai-work-style",
     "/employers",
-    "/how-it-works",
-    "/proof-of-ai-work",
-    "/ai-portfolio",
-    "/upload",
-    "/explore",
+    "/job-seekers",
     "/quiz",
     "/blog",
     "/archetypes",
     "/glossary",
     "/enterprise/hiring-ai-capable-talent",
     "/enterprise/workforce-amplification",
+    "/scores",
+    "/examples",
+    "/community",
+    "/about",
+    "/privacy",
+    "/terms",
   ];
 
   const urls = [

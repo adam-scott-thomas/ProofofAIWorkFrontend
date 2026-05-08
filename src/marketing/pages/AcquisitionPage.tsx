@@ -2,7 +2,7 @@ import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router";
 import { getAcquisitionPage } from "../acquisition";
 import { useSeo } from "../hooks/useSeo";
-import { APP_URL } from "../lib/constants";
+import { APP_URL, siteMetadata } from "../lib/constants";
 
 type AcquisitionPageProps = {
   slug: string;
@@ -26,7 +26,21 @@ export default function AcquisitionPage({ slug }: AcquisitionPageProps) {
     return null;
   }
 
-  useSeo(page.seoTitle, page.metaDescription, `/${page.slug}`);
+  const canonical = `${siteMetadata.canonical}/${page.slug}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: page.seoTitle,
+    description: page.metaDescription,
+    mainEntityOfPage: canonical,
+    publisher: {
+      "@type": "Organization",
+      name: "ProofOfAIWork",
+      url: siteMetadata.canonical,
+    },
+  };
+
+  useSeo(page.seoTitle, page.metaDescription, `/${page.slug}`, undefined, "article", jsonLd);
 
   return (
     <article className="acquisition-page">
@@ -39,8 +53,8 @@ export default function AcquisitionPage({ slug }: AcquisitionPageProps) {
             {page.primaryCta}
             <ArrowRight size={18} />
           </a>
-          <Link className="button secondary" to="/your-ai-resume">
-            The resume is dead
+          <Link className="button secondary" to="/examples">
+            {page.secondaryCta ?? "View examples"}
             <ArrowRight size={18} />
           </Link>
         </div>
